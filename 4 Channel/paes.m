@@ -32,7 +32,7 @@ if TypeIn == 1
     [warnMsg, ~] = lastwarn;
     VMinIndex{c} = VMinIndex{c} + 50;
     numPeaks = numel(VMinIndex{c});
-    crossTime = zeros(numPeaks,1) + 1;
+    crossTime = NaN(numPeaks,1);
     
     if numPeaks == 0 && multiStopConditionsIn ~= 6  && ...
             multiStopConditionsIn ~= 7
@@ -41,7 +41,7 @@ if TypeIn == 1
         VMinIndex{c} = VMinIndex{c} + 50;
         warnMsg = [];
         numPeaks = 1;
-        crossTime = zeros(numPeaks,1) + 1;
+        crossTime = NaN(numPeaks,1);
         
     end
     
@@ -80,7 +80,7 @@ elseif TypeIn ~= 1
     
     VMinIndex{c} = VMinIndex{c} + 50;
     warnMsg = [];
-    crossTime = 1;
+    crossTime = NaN;
     
     %{
 elseif TypeIn == 1

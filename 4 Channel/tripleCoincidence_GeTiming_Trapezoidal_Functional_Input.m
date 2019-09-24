@@ -306,21 +306,21 @@ for i=iIn:iIn+9
         if sum(TypeIn(:) == 1) ~= 0
             
             if multiStopIn == '1'
-                timeOfFlight{s} = zeros(1,numPeaks) + 1;
+                timeOfFlight{s} = NaN(1,numPeaks);
                 
                 if sum(noGood(:,s)) == 0 && sum(noGoodS(:,s)) == 0
                     for p=1:numPeaks
                         timeOfFlight{s}(p) = (crossTime{s}.mcp(p) - crossTime{s}.gamma(1));
                         
                         if timeOfFlight{s}(p) < -250*10.^(-9)
-                            timeOfFlight{s}(p) = 1;
+                            timeOfFlight{s}(p) = NaN;
                             
                         end
                         
                     end
                     
                 else
-                    timeOfFlight{s}(1) = 1;
+                    timeOfFlight{s}(1) = NaN;
                     
                 end
                 
@@ -330,12 +330,12 @@ for i=iIn:iIn+9
                     timeOfFlight(s) = (crossTime{s}.mcp(1) - crossTime{s}.gamma(1));
                     
                 else
-                    timeOfFlight(s) = 1;
+                    timeOfFlight(s) = NaN;
                     
                 end
                 
                 if timeOfFlight(s) < -250*10.^(-9)
-                    timeOfFlight(s) = 1;
+                    timeOfFlight(s) = NaN;
                     
                 end
                 
