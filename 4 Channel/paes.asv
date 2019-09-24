@@ -108,14 +108,12 @@ for s=1:numberOfPeaks
             :VMinIndex{c}(s)));
     elseif TypeIn == 1
         integration = 0;
-        %'TypeIn 1'
+        'integration'
     end
     
-    if TypeIn == 1 && integration < 0.005
+    if  integration < 0.005
        numPeaks = numPeaks - 1;
        crossTime(s) = NaN;
-       'integration'
-       integration
        break;
         
     end
@@ -502,7 +500,7 @@ for s=1:numberOfPeaks
             
             % If truth vector (T) is not satisfied.
         else
-            crossTime(s) = NaN;
+            noGood = true;
             'rise time'
             
         end
@@ -555,14 +553,14 @@ for s=1:numberOfPeaks
                 noGood = false;
                 
             else
-                crossTime(s) = NaN;
+                noGood = true;
                 riseTime = 1;
                 'rise time'
                 
             end
             
         catch
-            crossTime(s) = NaN;
+            noGood = true;
             riseTime = 1;
             'error'
             
@@ -624,27 +622,27 @@ for s=1:numberOfPeaks
 end
 
 % Breaking from the loop if there are more or fewer electrons detected
-% than are set by the multi-stop conditions.
-if TypeIn == 1 && ((multiStopIn == '1' && (numel(warnMsg) > 0) || ...
-        (multiStopConditionsIn ~= 4 && multiStopConditionsIn ~= 5 ...
-        && multiStopConditionsIn ~= numPeaks) ...
-        || (multiStopConditionsIn == 5 && numPeaks == 1) ...
-        || numPeaks > 4))
-    
-    noGood = true;
-    riseTime = 1;
-    numPeaks = 0;
-    
-    %{
+    % than are set by the multi-stop conditions.
+    if TypeIn == 1 && ((multiStopIn == '1' && (numel(warnMsg) > 0) || ...
+            (multiStopConditionsIn ~= 4 && multiStopConditionsIn ~= 5 ...
+            && multiStopConditionsIn ~= numPeaks) ...
+            || (multiStopConditionsIn == 5 && numPeaks == 1) ...
+            || numPeaks > 4))
+        
+        noGood = true;
+        riseTime = 1;
+        numPeaks = 0;
+        
+        %{
         if integration < 0.005
             integration
             'integration 2'
             figure
             plot(pulseIny)
         end
-    %}
-    'numPeaks'
-    
-end
+        %}
+        'numPeaks'
+        
+    end
 
 end
