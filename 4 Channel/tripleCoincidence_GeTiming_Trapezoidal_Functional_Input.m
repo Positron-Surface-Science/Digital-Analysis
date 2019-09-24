@@ -51,7 +51,7 @@ for i=iIn:iIn+9
             % extract pulse waveforms and the corresponding information into a cell of structures.
             %---------------------------------------------------------------------------------------
             
-            if (true)
+            if (false)
                 channelNumber{c} = ['C',stringconversion(c),'1'];
                 
                 if i < 10
@@ -68,7 +68,7 @@ for i=iIn:iIn+9
                 
             end
             
-            if (false)
+            if (true)
                 channelNumber{c} = ['C',stringconversion(c),'Trace'];
                 
                 if i < 10
