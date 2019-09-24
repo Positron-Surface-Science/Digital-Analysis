@@ -172,7 +172,7 @@ for i=iIn:iIn+9
             %---------------------------------------------------------------------------------------
             
             if BPFSwitch == '1'
-                
+                oldPulse = pulse{c}(s).y;
                 [pulse{c}(s).y,dataFilter,baseline] = bpfilter(pulse{c}(s),c,FFTIn,dataFilter);
                 
             else

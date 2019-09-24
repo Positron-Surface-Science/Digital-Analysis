@@ -40,7 +40,7 @@ offset = offset1 + 1100E-9;
 %shapedPulse = pulseDeconv.y;
 
 is = 1;
-plottingOn = 1;
+plottingOn = 0;
 plottingOn2 = 0;
 plottingOn3 = 0;
 amp = 0;
@@ -49,7 +49,7 @@ noGood = 0;
 ANN = 0;
 
 try
-%{
+
     measurePulse = smooth(pulseIn.y,101,'moving') - ...
         mean(pulseIn.y(round(offset/T-2E-6/T):round(offset/T-1E-6/T)));
     
@@ -69,7 +69,7 @@ try
         return;
         
     end
-%}
+
     if ANN == 1
         ap = 0;
         newvIn = pulseIn.y(round(12E-6/T):round(24E-6/T));

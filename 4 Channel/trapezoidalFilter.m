@@ -31,7 +31,7 @@ G = round(gRound*divid/Ts);
 
 if abs(VMax) > abs(VMin)
     vIn.y = resample(vIn.y,p,q);
-    oldPulse = resample(oldPulse,p,q);
+    %oldPulse = resample(oldPulse,p,q);
     %vIn.y = resample(vIn.y,p,q);
     
 else
