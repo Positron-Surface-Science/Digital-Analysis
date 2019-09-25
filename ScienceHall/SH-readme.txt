@@ -1,8 +1,38 @@
 paes.m code:
-Integration Filter
-Peak finding
-Oscope file naming convention
-Polarity of MCP pulse
+Integration Filter:
+	% Integrating peak and region before peak to reduce periodic noise
+		% pulses.
+		if TypeIn == 1 && VMinIndex{c}(s)-round((10*10.^(-9)/dN)) > 0
+			integration = trapz(pulseIny(VMinIndex{c}(s)-round((10*10.^(-9)/dN)) ...
+				:VMinIndex{c}(s)));
+		elseif TypeIn == 1
+			integration = 0;
+			%'TypeIn 1'
+		end
+		
+		if TypeIn == 1 && integration < 0.025
+		   %numPeaks = numPeaks - 1;
+		   crossTime(s) = NaN;
+		   'integration'
+		   integration
+		   continue;
+			
+		end
+Polarity of MCP pulse and peak finding function:
+	if TypeIn == 1
+    pulseIny = -pulseIny;
+    lastwarn('');
+    % Set to detect peaks 15 ns apart (15*10.^(-9)/dN)
+  [VMin{c},VMinIndex{c}] = findpeaks(pulseIny(50:numel(pulseIny)-50),...
+        'MinPeakDistance',round((15*10.^(-9))/dN), ...
+        'MinPeakHeight',2*10.^(-3),'MinPeakProminence',2*10.^(-3), ...
+        'MinPeakWidth',round((2*10.^(-9))/dN),'WidthReference', ...
+        'halfheight','MaxPeakWidth',round((7*10.^(-9)/dN)));
+		
+tripleCoincidence_GeTiming_Trapezoidal_Functional_Input.m:
+Oscilloscope Filenameing convention:
+	line 54: true
+	line 71: false
 
 PEGS-4Channel.mlapp Settings:
 Bining-2126/4096
