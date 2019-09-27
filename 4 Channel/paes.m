@@ -1,4 +1,4 @@
-function [crossTime,noGood,numPeaks,riseTime] = paes(timingIn,TypeIn,c,multiStopIn,multiStopConditionsIn,numPeaks,pulseIn,RTFLIn,RTFUpIn)
+function [crossTime,noGood,numberOfPeaks,riseTime] = paes(timingIn,TypeIn,c,multiStopIn,multiStopConditionsIn,numPeaks,pulseIn,RTFLIn,RTFUpIn)
 
 % --------------------------------------------------------------------------
 % 'PAES' function which calculates the crossing "pick-off" time of detector
@@ -22,17 +22,28 @@ goodRiseTime = false;
 findingNoise = false;
 
 if TypeIn == 1
+    % Considering if a pulse is negative- or positive-going.
+    if max(pulseIny) < abs(min(pulseIny))
+        pulseIny = -pulseIny;
+        
+    end
+    
     lastwarn('');
     % Set to detect peaks 15 ns apart (15*10.^(-9)/dN)
     [VMin{c},VMinIndex{c}] = findpeaks(pulseIny(50:numel(pulseIny)-50),...
         'MinPeakDistance',round((5*10.^(-9))/dN), ...
         'MinPeakHeight',1*10.^(-3),'MinPeakProminence',0.8*10.^(-3), ...
-        'MinPeakWidth',round((7*10.^(-9))/dN),'WidthReference', ...
+        'MinPeakWidth',round((5*10.^(-9))/dN),'WidthReference', ...
         'halfheight','MaxPeakWidth',round((40*10.^(-9)/dN)));
+    
     [warnMsg, ~] = lastwarn;
     VMinIndex{c} = VMinIndex{c} + 50;
     numPeaks = numel(VMinIndex{c});
+    numberOfPeaks = numPeaks;
     crossTime = NaN(numPeaks,1);
+    'numPeaks'
+    numPeaks
+    
     
     if numPeaks == 0 && multiStopConditionsIn ~= 6  && ...
             multiStopConditionsIn ~= 7
@@ -41,6 +52,7 @@ if TypeIn == 1
         VMinIndex{c} = VMinIndex{c} + 50;
         warnMsg = [];
         numPeaks = 1;
+        numberOfPeaks = numPeaks;
         crossTime = NaN(numPeaks,1);
         
     end
@@ -58,6 +70,7 @@ if TypeIn == 1
    
     if multiStopIn == '0'
         numPeaks = 1;
+        numberOfPeaks = 1;
         
     end
     
@@ -81,6 +94,7 @@ elseif TypeIn ~= 1
     VMinIndex{c} = VMinIndex{c} + 50;
     warnMsg = [];
     crossTime = NaN;
+    numberOfPeaks = 1;
     
     %{
 elseif TypeIn == 1
@@ -100,7 +114,8 @@ VMinFraction2 = zeros(1,numPeaks);
 numberOfPeaks = numPeaks;
 
 for s=1:numberOfPeaks
-    
+    's'
+    s
     % Integrating peak and region before peak to reduce periodic noise
     % pulses.
     if TypeIn == 1 && VMinIndex{c}(s)-round((100*10.^(-9)/dN)) > 0
@@ -116,7 +131,7 @@ for s=1:numberOfPeaks
        crossTime(s) = NaN;
        'integration'
        integration
-       break;
+       continue;
         
     end
     
@@ -295,7 +310,7 @@ for s=1:numberOfPeaks
             riseTime = 1;
             numPeaks = numPeaks - 1;
             'ELET error'
-            break;
+            continue;
             
         end
         
@@ -503,6 +518,7 @@ for s=1:numberOfPeaks
             % If truth vector (T) is not satisfied.
         else
             crossTime(s) = NaN;
+            numPeaks = numPeaks - 1;
             'rise time'
             
         end
@@ -556,6 +572,7 @@ for s=1:numberOfPeaks
                 
             else
                 crossTime(s) = NaN;
+                numPeaks = numPeaks - 1;
                 riseTime = 1;
                 'rise time'
                 
@@ -563,6 +580,7 @@ for s=1:numberOfPeaks
             
         catch
             crossTime(s) = NaN;
+            numPeaks = numPeaks - 1;
             riseTime = 1;
             'error'
             
@@ -628,12 +646,12 @@ end
 if TypeIn == 1 && ((multiStopIn == '1' && (numel(warnMsg) > 0) || ...
         (multiStopConditionsIn ~= 4 && multiStopConditionsIn ~= 5 ...
         && multiStopConditionsIn ~= numPeaks) ...
-        || (multiStopConditionsIn == 5 && numPeaks == 1) ...
-        || numPeaks > 4))
+        || (multiStopConditionsIn == 5 && (numPeaks == 1 || numPeaks == 0)) ...
+        || numPeaks > 5))
     
     noGood = true;
     riseTime = 1;
-    numPeaks = 0;
+    numberOfPeaks = 0;
     
     %{
         if integration < 0.005
@@ -643,7 +661,7 @@ if TypeIn == 1 && ((multiStopIn == '1' && (numel(warnMsg) > 0) || ...
             plot(pulseIny)
         end
     %}
-    'numPeaks'
+    'numPeaks reject'
     
 end
 

@@ -1,4 +1,4 @@
-function [crossTime,noGood,numPeaks,riseTime] = paes(timingIn,TypeIn,c,multiStopIn,multiStopConditionsIn,numPeaks,pulseIn,RTFLIn,RTFUpIn)
+function [crossTime,noGood,numberOfPeaks,riseTime] = paes(timingIn,TypeIn,c,multiStopIn,multiStopConditionsIn,numPeaks,pulseIn,RTFLIn,RTFUpIn)
 
 % --------------------------------------------------------------------------
 % 'PAES' function which calculates the crossing "pick-off" time of detector
@@ -29,10 +29,15 @@ if TypeIn == 1
         'MinPeakHeight',1*10.^(-3),'MinPeakProminence',0.8*10.^(-3), ...
         'MinPeakWidth',round((7*10.^(-9))/dN),'WidthReference', ...
         'halfheight','MaxPeakWidth',round((40*10.^(-9)/dN)));
+    
     [warnMsg, ~] = lastwarn;
     VMinIndex{c} = VMinIndex{c} + 50;
     numPeaks = numel(VMinIndex{c});
-    crossTime = zeros(numPeaks,1) + 1;
+    numberOfPeaks = numPeaks;
+    crossTime = NaN(numPeaks,1);
+    'numPeaks'
+    numPeaks
+    
     
     if numPeaks == 0 && multiStopConditionsIn ~= 6  && ...
             multiStopConditionsIn ~= 7
@@ -41,7 +46,7 @@ if TypeIn == 1
         VMinIndex{c} = VMinIndex{c} + 50;
         warnMsg = [];
         numPeaks = 1;
-        crossTime = zeros(numPeaks,1) + 1;
+        crossTime = NaN(numPeaks,1);
         
     end
     
@@ -67,6 +72,12 @@ if TypeIn == 1
     %end
     
 elseif TypeIn ~= 1
+    
+    if max(pulseIny) < abs(min(pulseIny))
+        pulseIny = -pulseIny;
+        
+    end
+    
     [VMin{c},VMinIndex{c}] = max(pulseIny(50:numel(pulseIny)-50));
     [VMin2{c},VMinIndex2{c}] = min(pulseIny(50:numel(pulseIny)-50));
     
@@ -80,7 +91,7 @@ elseif TypeIn ~= 1
     
     VMinIndex{c} = VMinIndex{c} + 50;
     warnMsg = [];
-    crossTime = 1;
+    crossTime = NaN;
     
     %{
 elseif TypeIn == 1
@@ -97,10 +108,9 @@ VMinFraction = zeros(1,numPeaks);
 VMinFraction1 = zeros(1,numPeaks);
 VMinFraction2 = zeros(1,numPeaks);
 
-numberOfPeaks = numPeaks;
-
 for s=1:numberOfPeaks
-    
+    's'
+    s
     % Integrating peak and region before peak to reduce periodic noise
     % pulses.
     if TypeIn == 1 && VMinIndex{c}(s)-round((100*10.^(-9)/dN)) > 0
@@ -108,13 +118,15 @@ for s=1:numberOfPeaks
             :VMinIndex{c}(s)));
     elseif TypeIn == 1
         integration = 0;
-        'integration'
+        %'TypeIn 1'
     end
     
-    if  integration < 0.005
+    if TypeIn == 1 && integration < 0.005
        numPeaks = numPeaks - 1;
        crossTime(s) = NaN;
-       break;
+       'integration'
+       integration
+       continue;
         
     end
     
@@ -293,7 +305,7 @@ for s=1:numberOfPeaks
             riseTime = 1;
             numPeaks = numPeaks - 1;
             'ELET error'
-            break;
+            continue;
             
         end
         
@@ -500,7 +512,7 @@ for s=1:numberOfPeaks
             
             % If truth vector (T) is not satisfied.
         else
-            noGood = true;
+            crossTime(s) = NaN;
             'rise time'
             
         end
@@ -553,14 +565,14 @@ for s=1:numberOfPeaks
                 noGood = false;
                 
             else
-                noGood = true;
+                crossTime(s) = NaN;
                 riseTime = 1;
                 'rise time'
                 
             end
             
         catch
-            noGood = true;
+            crossTime(s) = NaN;
             riseTime = 1;
             'error'
             
@@ -622,27 +634,27 @@ for s=1:numberOfPeaks
 end
 
 % Breaking from the loop if there are more or fewer electrons detected
-    % than are set by the multi-stop conditions.
-    if TypeIn == 1 && ((multiStopIn == '1' && (numel(warnMsg) > 0) || ...
-            (multiStopConditionsIn ~= 4 && multiStopConditionsIn ~= 5 ...
-            && multiStopConditionsIn ~= numPeaks) ...
-            || (multiStopConditionsIn == 5 && numPeaks == 1) ...
-            || numPeaks > 4))
-        
-        noGood = true;
-        riseTime = 1;
-        numPeaks = 0;
-        
-        %{
+% than are set by the multi-stop conditions.
+if TypeIn == 1 && ((multiStopIn == '1' && (numel(warnMsg) > 0) || ...
+        (multiStopConditionsIn ~= 4 && multiStopConditionsIn ~= 5 ...
+        && multiStopConditionsIn ~= numPeaks) ...
+        || (multiStopConditionsIn == 5 && numPeaks == 1) ...
+        || numPeaks > 4))
+    
+    noGood = true;
+    riseTime = 1;
+    numberOfPeaks = 0;
+    
+    %{
         if integration < 0.005
             integration
             'integration 2'
             figure
             plot(pulseIny)
         end
-        %}
-        'numPeaks'
-        
-    end
+    %}
+    'numPeaks reject'
+    
+end
 
 end
