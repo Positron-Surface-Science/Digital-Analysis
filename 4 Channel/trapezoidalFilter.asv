@@ -13,7 +13,7 @@ digits(15)
 % trapezoid (G) and the leading and falling edges of the
 % trapezoid (L).
 p = 1;%round(q/(L*pulseIn.desc.fs))
-q = floor((1.25*p)/0.5);
+q = floor((1.25*p)/0.1);
 Fs = (p/q)*vIn.desc.fs;
 Ts = 1/Fs;
 noGood = 0;
@@ -447,7 +447,7 @@ vOut = conv(vIn.y(50:numel(vIn.y)-50),squarePulse);
         %}
         
         %[vIn.y,~,~] = MLSmoothing(vIn.y,Ts);
-        %{
+        
         netInput = oldPulse(round(10E-6/Ts):round(35E-6/Ts));
         baseline = mean(netInput(200:450));
         netInput = netInput - baseline;
@@ -467,12 +467,10 @@ vOut = conv(vIn.y(50:numel(vIn.y)-50),squarePulse);
         %truth = evalin('base','truth');
         %result = truth*out;
         
-        if sum(out(1:30)) == 1 %out(8) == 1 || out(13) == 1 || out(17) == 1 || out(22) == 1
+        if sum(out(40:49)) == 1 %out(8) == 1 || out(13) == 1 || out(17) == 1 || out(22) == 1
         %plot(vIn.y)
-        %}
         [trapezoidalPlateauAverage,vOut,noGood] = MWD(vIn,oldPulse,TFRFIn,TFTopIn);
         
-        %{
         else
             
             trapezoidalPlateauAverage = 0;
@@ -480,7 +478,7 @@ vOut = conv(vIn.y(50:numel(vIn.y)-50),squarePulse);
             noGood = 1;
             
         end
-        %}
+        
         % --------------------------------------------------------------------
         % Manual convolution
         % --------------------------------------------------------------------

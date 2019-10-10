@@ -2,7 +2,7 @@ function [VoutMax,timeOfFlight,errorOccurred,noFilesFound,dataFilter,baselineAve
     tripleCoincidence_GeTiming_Trapezoidal_Functional_Input(selectPathIn,...
     iIn,analysisTypeIn,multiStopIn,multiStopConditionsIn,TypeIn,timingTypeIn,shapingTypeIn,...
     FFTIn,coinCh,energyCoinCh,RTFLIn,RTFUpIn,TFTopIn,TFRFIn,TFTopInFast,TFRFInFast,BPFSwitch,dataFilter,...
-    ELETParam)
+    )
 
 %---------------------------------------------------------------------------
 % Primary coincidence function. Reads the waveforms from the Lecroy
@@ -223,7 +223,7 @@ for i=iIn:iIn+9
                 end
                 
                 [crossTimeOut,noGood(c,i),numPeaks,~] = paes(timingTypeIn(c),TypeIn(c),c,multiStopIn,...
-                    multiStopConditionsIn,numPeaks,pulse{c}(s),RTFLIn,RTFUpIn,ELETParam);
+                    multiStopConditionsIn,numPeaks,pulse{c}(s),RTFLIn,RTFUpIn);
                 
                 try
                     

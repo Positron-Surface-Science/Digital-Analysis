@@ -563,9 +563,9 @@ try
         
         if plottingOn4 == 1
             
-            plot(pulseIn.y(round(14.5E-6/T):round(18E-6/T)))
-            assignin('base','trace',pulseIn.y(round(14.5E-6/T):round(18E-6/T)));
-            evalin('base','traces =  horzcat(traces,trace);');
+            plot(vIn.y(round(14E-6/T):round(17E-6/T)))
+            assignin('base','trace',vIn.y(round(14E-6/T):round(17E-6/T)));
+            evalin('base','wholeTraces =  horzcat(wholeTraces,trace);');
             
         end
         

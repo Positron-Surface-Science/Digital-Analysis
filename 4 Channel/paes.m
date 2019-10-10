@@ -1,4 +1,5 @@
-function [crossTime,noGood,numberOfPeaks,riseTime] = paes(timingIn,TypeIn,c,multiStopIn,multiStopConditionsIn,numPeaks,pulseIn,RTFLIn,RTFUpIn)
+function [crossTime,noGood,numberOfPeaks,riseTime] = paes(timingIn,TypeIn,c,...
+    multiStopIn,multiStopConditionsIn,numPeaks,pulseIn,RTFLIn,RTFUpIn,ELETParam)
 
 % --------------------------------------------------------------------------
 % 'PAES' function which calculates the crossing "pick-off" time of detector
@@ -142,8 +143,8 @@ for s=1:numberOfPeaks
     else
         % Fraction for CFD, ELET, and RTF.
         VMinFraction = (0.42*VMin{c}(s));
-        VMinFraction1 = (0.07*VMin{c}(s));
-        VMinFraction2 = (0.09*VMin{c}(s));
+        VMinFraction1 = (ELETParam(1)*VMin{c}(s));
+        VMinFraction2 = (ELETParam(2)*VMin{c}(s));
         riseTimeLower = (0.1*VMin{c}(s));
         riseTimeHigher = (0.9*VMin{c}(s));
         %riseTimeLower = (0.1*VMin(c,s));
