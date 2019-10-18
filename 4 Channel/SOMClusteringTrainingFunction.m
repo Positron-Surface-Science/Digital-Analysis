@@ -6,12 +6,12 @@
 %
 %   p5s - input data.
 
-x = wtreN;
+x = treN;
 
 % Create a Self-Organizing Map
-dimension1 = 10;
-dimension2 = 10;
-net = selforgmap([dimension1 dimension2]);
+dimension1 = 12;
+dimension2 = 12;
+net = selforgmap([dimension1 dimension2],150,4,'hextop','linkdist');
 
 % Choose Plot Functions
 % For a list of all plot functions type: help nnplot

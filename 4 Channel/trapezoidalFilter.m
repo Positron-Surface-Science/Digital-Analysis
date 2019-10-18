@@ -13,7 +13,7 @@ digits(15)
 % trapezoid (G) and the leading and falling edges of the
 % trapezoid (L).
 p = 1;%round(q/(L*pulseIn.desc.fs))
-q = floor((1.25*p)/0.5);
+q = floor((1.25*p)/0.1);
 Fs = (p/q)*vIn.desc.fs;
 Ts = 1/Fs;
 noGood = 0;

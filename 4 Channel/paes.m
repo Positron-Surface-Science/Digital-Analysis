@@ -1,5 +1,6 @@
 function [crossTime,noGood,numberOfPeaks,riseTime] = paes(timingIn,TypeIn,c,...
-    multiStopIn,multiStopConditionsIn,numPeaks,pulseIn,RTFLIn,RTFUpIn,ELETParam)
+    multiStopIn,multiStopConditionsIn,numPeaks,pulseIn,RTFLIn,RTFUpIn,ELETMatrix,...
+    DiscriminationVector,neuron,activeNeuron,ggc)
 
 % --------------------------------------------------------------------------
 % 'PAES' function which calculates the crossing "pick-off" time of detector
@@ -21,8 +22,18 @@ foundFrac1 = 1;
 foundFrac2 = 1;
 goodRiseTime = false;
 findingNoise = false;
+neuronTemp = neuron;
+exact = DiscriminationVector.exact;
+'ACTIVE'
+activeNeuron
+if activeNeuron ~= 0
+exact(activeNeuron)
+ELETMatrix(activeNeuron,1)
+ELETMatrix(activeNeuron,2)
+end
 
-if TypeIn == 1
+if TypeIn == 1 && ggc == 0
+    neuronTemp = 0;
     % Considering if a pulse is negative- or positive-going.
     if max(pulseIny) < abs(min(pulseIny))
         pulseIny = -pulseIny;
@@ -80,6 +91,25 @@ if TypeIn == 1
      %   plot(pulseIn.y)
     %end
     
+elseif TypeIn == 1 && ggc == 1
+    neuronTemp = 0;
+    [VMin{c},VMinIndex{c}] = max(pulseIny(50:numel(pulseIny)-50));
+    [VMin2{c},VMinIndex2{c}] = min(pulseIny(50:numel(pulseIny)-50));
+    
+    % Considering if a pulse is negative- or positive-going.
+    if abs(VMin2{c}) > abs(VMin{c})
+        VMin{c} = abs(VMin2{c});
+        VMinIndex{c} = VMinIndex2{c};
+        pulseIny = abs(pulseIny);
+        
+    end
+    
+    VMinIndex{c} = VMinIndex{c} + 50;
+    warnMsg = [];
+    crossTime = NaN;
+    numberOfPeaks = 1;
+    
+    
 elseif TypeIn ~= 1
     [VMin{c},VMinIndex{c}] = max(pulseIny(50:numel(pulseIny)-50));
     [VMin2{c},VMinIndex2{c}] = min(pulseIny(50:numel(pulseIny)-50));
@@ -115,11 +145,11 @@ VMinFraction2 = zeros(1,numPeaks);
 numberOfPeaks = numPeaks;
 
 for s=1:numberOfPeaks
-    's'
-    s
+    %'s'
+    %s
     % Integrating peak and region before peak to reduce periodic noise
     % pulses.
-    if TypeIn == 1 && VMinIndex{c}(s)-round((100*10.^(-9)/dN)) > 0
+    if (TypeIn == 1 && ggc == 0) && VMinIndex{c}(s)-round((100*10.^(-9)/dN)) > 0
         integration = trapz(pulseIny(VMinIndex{c}(s)-round((100*10.^(-9)/dN)) ...
             :VMinIndex{c}(s)));
     elseif TypeIn == 1
@@ -127,7 +157,7 @@ for s=1:numberOfPeaks
         %'TypeIn 1'
     end
     
-    if TypeIn == 1 && integration < 0.005
+    if (TypeIn == 1 && ggc == 0) && integration < 0.005
        numPeaks = numPeaks - 1;
        crossTime(s) = NaN;
        'integration'
@@ -143,12 +173,27 @@ for s=1:numberOfPeaks
     else
         % Fraction for CFD, ELET, and RTF.
         VMinFraction = (0.42*VMin{c}(s));
-        VMinFraction1 = (ELETParam(1)*VMin{c}(s));
-        VMinFraction2 = (ELETParam(2)*VMin{c}(s));
+        
+        if TypeIn == 3 && ggc == 1
+            VMinFraction1 = (ELETMatrix(activeNeuron,1)*0.01*VMin{c}(s));
+            VMinFraction2 = (ELETMatrix(activeNeuron,2)*0.01*VMin{c}(s));
+            %VMinFraction1 = (0.07*VMin{c}(s));
+            %VMinFraction2 = (0.09*VMin{c}(s));
+        elseif TypeIn == 1
+            VMinFraction1 = (0.4*VMin{c}(s));
+            VMinFraction2 = (0.42*VMin{c}(s));
+            
+        else
+            VMinFraction1 = (0.07*VMin{c}(s));
+            VMinFraction2 = (0.09*VMin{c}(s));
+            
+        end
+        
         riseTimeLower = (0.1*VMin{c}(s));
         riseTimeHigher = (0.9*VMin{c}(s));
         %riseTimeLower = (0.1*VMin(c,s));
         %riseTimeHigher = (0.9*VMin(c,s));
+        %'ELET Parameters'
         
         % Charging from the peak towards lower time to find the closest value to
         % the fractional voltage.
@@ -222,9 +267,13 @@ for s=1:numberOfPeaks
     % ---------------------------------
     % ELET: finding channels corresponding to the two fractions.
     % ---------------------------------
+    activeNeuron
     elseif (timingIn == 0 || timingIn == 2 || timingIn == 4) && T ~= 0 && ...
-        VMinIndex{c}(s) > round(900E-9/dN)
-    
+        VMinIndex{c}(s) > round(900E-9/dN) && (activeNeuron == 0 ...
+        || exact(activeNeuron) == 1)
+    if TypeIn == 1
+        'IN'
+    end
         %{
         stop1 = 0;
         stop2 = 0;
@@ -266,14 +315,14 @@ for s=1:numberOfPeaks
         %}
         
         try
-            if s > 1
-                [~, foundFrac1] = min(abs(pulseIny(VMinIndex{c}(s-1)+ ...
+            if TypeIn == 1
+                [~, foundFrac1] = min(abs(pulseIny(VMinIndex{c}(s)- ...
                     round((20*10.^(-9))/dN):VMinIndex{c}(s)) - VMinFraction1));
-                [~, foundFrac2] = min(abs(pulseIny(VMinIndex{c}(s-1)+ ...
+                [~, foundFrac2] = min(abs(pulseIny(VMinIndex{c}(s)- ...
                     round((20*10.^(-9))/dN):VMinIndex{c}(s)) - VMinFraction2));
                 
-                foundFrac1 = foundFrac1 + VMinIndex{c}(s-1) + round(20*10.^(-9)/dN);
-                foundFrac2 = foundFrac2 + VMinIndex{c}(s-1) + round(20*10.^(-9)/dN);
+                foundFrac1 = foundFrac1 + VMinIndex{c}(s) + round(20E-9/dN);
+                foundFrac2 = foundFrac2 + VMinIndex{c}(s) + round(20E-9/dN);
                 
             else
                 [~, foundFrac1] = min(abs(pulseIny(VMinIndex{c}(s)-round(900E-9/dN): ...
@@ -305,7 +354,7 @@ for s=1:numberOfPeaks
                 end
                 
             end
-           
+            
         catch
             crossTime(s) = NaN;
             riseTime = 1;
@@ -396,7 +445,8 @@ for s=1:numberOfPeaks
         foundFrac = 1;
         
     end
-    
+    foundFrac1
+        foundFrac2
     % CFD pulseIn interpolation.
     
     if TypeIn ~= 1 && s > 1
@@ -442,8 +492,8 @@ for s=1:numberOfPeaks
             && foundFrac2 > round(5E-9/dN) && ...
             count1 < 0.99*numel(pulseIny) && count2 < 0.99*numel(pulseIny) && ...
             foundFrac1 < 0.99*numel(pulseIny) && foundFrac2 < 0.99*numel(pulseIny) && ...
-            foundFrac2 - foundFrac1 <= round(500E-9/dN) && T ~= 0 && ...
-            pulseIny(foundFrac2) < 0.15*VMin{c}(s)
+            foundFrac2 - foundFrac1 <= round(900E-9/dN) && T ~= 0 && ...
+            pulseIny(foundFrac2) < 0.9*VMin{c}(s)
         
         % Determining the x (time) and y (voltage) values of the
         % discovered fractions.
@@ -484,7 +534,9 @@ for s=1:numberOfPeaks
             timingIndex+round(5E-9/dN)),1);
         [warnMsg, ~] = lastwarn;
         %}
-        
+        'FOUND'
+        foundFrac1
+        foundFrac2
         lastwarn('');
         pFit = polyfit(pulseInx(foundFrac1:foundFrac2),pulseIny(foundFrac1:foundFrac2),1);
         [warnMsg, ~] = lastwarn;

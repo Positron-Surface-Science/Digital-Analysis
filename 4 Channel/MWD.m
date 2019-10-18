@@ -3,7 +3,7 @@ format long
 digits(15)
 
 p = 1;%round(q/(L*pulseIn.desc.fs))
-q = floor((1.25*p)/0.5);
+q = floor((1.25*p)/0.1);
 Fs = (p/q)*pulseIn.desc.fs;
 T = (1/Fs);%q/p)*pulseIn.desc.Ts
 
@@ -43,14 +43,14 @@ is = 1;
 plottingOn = 0;
 plottingOn2 = 0;
 plottingOn3 = 0;
-plottingOn4 = 1;
+plottingOn4 = 0;
 amp = 0;
 SLF = 0;
 noGood = 0;
 ANN = 0;
 
 try
-    %{
+    
     measurePulse = smooth(pulseIn.y,101,'moving') - ...
         mean(pulseIn.y(round(offset/T-2E-6/T):round(offset/T-1E-6/T)));
     
@@ -70,7 +70,7 @@ try
         return;
         
     end
-%}
+
     if ANN == 1
         ap = 0;
         newvIn = pulseIn.y(round(12E-6/T):round(24E-6/T));
@@ -563,8 +563,8 @@ try
         
         if plottingOn4 == 1
             
-            plot(pulseIn.y(round(14.5E-6/T):round(18E-6/T)))
-            assignin('base','trace',pulseIn.y(round(14.5E-6/T):round(18E-6/T)));
+            plot(pulseIn.y(round(10E-6/T):round(35E-6/T)))
+            assignin('base','trace',pulseIn.y(round(10E-6/T):round(35E-6/T)));
             evalin('base','traces =  horzcat(traces,trace);');
             
         end

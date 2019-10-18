@@ -1,8 +1,8 @@
 function [VoutMax,timeOfFlight,errorOccurred,noFilesFound,dataFilter,baselineAverage] = ...
     tripleCoincidence_GeTiming_Trapezoidal_Functional_Input(selectPathIn,...
     iIn,analysisTypeIn,multiStopIn,multiStopConditionsIn,TypeIn,timingTypeIn,shapingTypeIn,...
-    FFTIn,coinCh,energyCoinCh,RTFLIn,RTFUpIn,TFTopIn,TFRFIn,TFTopInFast,TFRFInFast,BPFSwitch,dataFilter,...
-    )
+    FFTIn,coinCh,ggc,RTFLIn,RTFUpIn,TFTopIn,TFRFIn,TFTopInFast,TFRFInFast,BPFSwitch,dataFilter,...
+    DiscriminationVector,ELETMatrix,ClusteringNetwork,neuron)
 
 %---------------------------------------------------------------------------
 % Primary coincidence function. Reads the waveforms from the Lecroy
@@ -21,6 +21,10 @@ errorOccurred = false;
 seeingNoFiles = 0;
 noFilesFound = false;
 goodCounter = 0;
+ANN = 1;
+activeNeuron = 0;
+exact = ones(size(DiscriminationVector));
+ELETMatrix = ELETMatrix.ELETVector;
 
 % PAES analysis definitions.
 
@@ -166,22 +170,7 @@ for i=iIn:iIn+9
             offset = -pulse{c}(s).info.OFFSET;
             Fs = pulse{c}(s).desc.fs;
             T = (1/Fs);
-            
-            %---------------------------------------------------------------------------------------
-            % FFT low pass filter to remove high frequency noise (on both
-            % MCP and Gamma detector).
-            %---------------------------------------------------------------------------------------
-            
-            if BPFSwitch == '1'
-                oldPulse = pulse{c}(s).y;
-                [pulse{c}(s).y,dataFilter,baseline] = bpfilter(pulse{c}(s),c,FFTIn,dataFilter);
-                
-            else
-                oldPulse = pulse{c}(s).y;
-                baseline = mean(pulse{c}(s).y(round((offset-999E-9)/T):round((offset-500E-9)/T)));
-                pulse{c}(s).y = pulse{c}(s).y - baseline;
-                
-            end
+            oldPulse = pulse{c}(s).y;
             
             %---------------------------------------------------------------------------------------
             % HPGe pulse analysis (trapezoidal).
@@ -194,17 +183,91 @@ for i=iIn:iIn+9
                 
                 if noGoodS(c,i) == false
                     goodCounter = goodCounter + 1;
-                    baselineAverage = baselineAverage + baseline;
+                    %baselineAverage = baselineAverage + baseline;
                     
                 end
                 
             end
+            
+            
+            %---------------------------------------------------------------------------------------
+            % FFT low pass filter to remove high frequency noise (on both
+            % MCP and Gamma detector).
+            %---------------------------------------------------------------------------------------
+            
+            if BPFSwitch == '1'
+                [pulse{c}(s).y,dataFilter,baseline] = bpfilter(pulse{c}(s),c,FFTIn,dataFilter);
+                
+            else
+                baseline = mean(pulse{c}(s).y(round((offset-999E-9)/T):round((offset-500E-9)/T)));
+                pulse{c}(s).y = pulse{c}(s).y - baseline;
+                
+            end
+            
+            %---------------------------------------------------------------------------------------
+            % ANN Analysis.
+            %---------------------------------------------------------------------------------------
+            
+            if ANN == 1 && TypeIn(c) == 3 && shapingTypeIn(c) == 8
+                ggc = 1;
+                p = 1;
+                q = floor((1.25*p)/0.5);
+                FsN = (p/q)*Fs;
+                TsN = 1/FsN;
+                
+                baseline = mean(oldPulse(round((offset-999E-9)/T):round((offset-500E-9)/T)));
+                oldPulse = oldPulse - baseline;
+                
+                vIn = resample(oldPulse,p,q);
+                
+                netTrace = vIn(round(14.5E-6/TsN):round(18E-6/TsN));
+                
+                netTrace = netTrace(150:550);
+                
+                netTrace = netTrace/max(netTrace);
+                
+                net = ClusteringNetwork.net;
+                
+                exact = DiscriminationVector.exact;
+                
+                out = net(netTrace);
+                
+                'Active Neuron'
+                activeNeuron = find(out == 1)
+                neuron
+                %neuron = 0;
+                
+                %{
+                if activeNeuron == neuron
+                    plot(netTrace)
+                    doesTimesExist = evalin('base','exist(''times'',''var'');');
+                    
+                    if doesTimesExist == 1
+                        assignin('base','neuron',neuron);
+                        evalin('base','times{neuron} = times{neuron} + 1;');
+                        
+                    else
+                        evalin('base','times = cell(zeros(1,1))');
+                        
+                    end
+                    
+                end
+                %}
+                
+            elseif ANN == 1 && TypeIn(c) == 1
+                gcc = 1;
+                activeNeuron = 0;
+                %neuron = 0;
+                
+            end
+            
             
             %---------------------------------------------------------------------------------------
             % PAES analysis.
             %---------------------------------------------------------------------------------------
             
             if analysisTypeIn ~= 3 && timingTypeIn(c) ~= 3 && (c == coinCh(1) || c == coinCh(2))
+                
                 %{
                 try
                     T = pulse{c}(s).desc.Ts;
@@ -223,9 +286,10 @@ for i=iIn:iIn+9
                 end
                 
                 [crossTimeOut,noGood(c,i),numPeaks,~] = paes(timingTypeIn(c),TypeIn(c),c,multiStopIn,...
-                    multiStopConditionsIn,numPeaks,pulse{c}(s),RTFLIn,RTFUpIn);
+                    multiStopConditionsIn,numPeaks,pulse{c}(s),RTFLIn,RTFUpIn,ELETMatrix, ...
+                    DiscriminationVector,neuron,activeNeuron,ggc);
                 
-                try
+                %try
                     
                     if sum(TypeIn(:) == 1) ~= 0
                         
@@ -237,6 +301,13 @@ for i=iIn:iIn+9
                                 
                             case 3
                                 crossTime{s}.gamma = crossTimeOut;
+                                'CALCULATE'
+                                if ANN == 1 && activeNeuron ~= 0
+                                    assignin('
+                                    crossTime{s}.gamma = crossTime{s}.gamma - ELETMatrix(activeNeuron,3);
+                                    ELETMatrix(activeNeuron,3)
+                                end
+                                
                                 %'cross time gamma'
                                 %crossTime{s}.gamma(1)
                         end
@@ -254,14 +325,14 @@ for i=iIn:iIn+9
                         crossTime{s}.gamma4 = crossTimeOut;
                         
                     end
-                    
+                    %{
                 catch
                     errordlg('Check channel timing type.','Timing Error');
                     errorOccurred = true;
                     return;
                     
                 end
-                
+                %}
             end
         end
         
@@ -302,7 +373,7 @@ for i=iIn:iIn+9
     % Finding time difference between fractional value of MCP pulse and
     % x-crossover value of the gamma pulse.
     
-    try
+    %try
     
         if sum(TypeIn(:) == 1) ~= 0
             
@@ -328,6 +399,9 @@ for i=iIn:iIn+9
             else
                 
                 if sum(noGood(:,s)) == 0 && sum(noGoodS(:,s)) == 0
+                    length(crossTime)
+                    s
+                    crossTime{s}
                     timeOfFlight(s) = (crossTime{s}.mcp(1) - crossTime{s}.gamma(1));
                     
                 else
@@ -378,13 +452,14 @@ for i=iIn:iIn+9
             timeOfFlight(s) = 1;
             
         end
-        
+        %{
     catch
         errordlg('Check channel timing type.','Timing Error');
         errorOccurred = true;
         return;
         
     end
+    %}
     %clearvars pulse;
     s = s + 1;
     pause(0.001);
