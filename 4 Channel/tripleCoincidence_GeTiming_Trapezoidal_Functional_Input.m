@@ -21,10 +21,11 @@ errorOccurred = false;
 seeingNoFiles = 0;
 noFilesFound = false;
 goodCounter = 0;
-ANN = 1;
 activeNeuron = 0;
 exact = ones(size(DiscriminationVector));
-ELETMatrix = ELETMatrix.ELETVector;
+a = fieldnames(ELETMatrix);
+ELETMatrix = getfield(ELETMatrix,a{1});
+timingTypeChanged = false;
 
 % PAES analysis definitions.
 
@@ -46,6 +47,20 @@ for i=iIn:iIn+9
     for c=1:numChannels
         
         if TypeIn(c) ~= 4
+            'TYPEIN'
+            TypeIn(c)
+            timingTypeIn(c)
+            if TypeIn(c) == 3 && (timingTypeIn(c) == 4 || ...
+                    timingTypeChanged == true)
+                ANN = 1;
+                timingTypeIn(c) = 0;
+                timingTypeChanged = true;
+                'ANN ACTIVE'
+            else
+                ANN = 0;
+                activeNeuron = 0;
+                'ANN NOT ACTIVE'
+            end
             
             noFile = true;
             noFileCounter = 1;
@@ -145,6 +160,7 @@ for i=iIn:iIn+9
                     else
                         timeOfFlight = zeros(1,10) + 1;
                     end
+                    
                     noFilesFound = true;
                     return;
                     
@@ -189,7 +205,6 @@ for i=iIn:iIn+9
                 
             end
             
-            
             %---------------------------------------------------------------------------------------
             % FFT low pass filter to remove high frequency noise (on both
             % MCP and Gamma detector).
@@ -208,7 +223,8 @@ for i=iIn:iIn+9
             % ANN Analysis.
             %---------------------------------------------------------------------------------------
             
-            if ANN == 1 && TypeIn(c) == 3 && shapingTypeIn(c) == 8
+            if ANN == 1 && TypeIn(c) == 3
+                'ANN ON'
                 ggc = 1;
                 p = 1;
                 q = floor((1.25*p)/0.5);
@@ -226,9 +242,11 @@ for i=iIn:iIn+9
                 
                 netTrace = netTrace/max(netTrace);
                 
-                net = ClusteringNetwork.net;
+                a = fieldnames(ClusteringNetwork);
+                net = getfield(ClusteringNetwork,a{1});
                 
-                exact = DiscriminationVector.exact;
+                a = fieldnames(DiscriminationVector);
+                exact = getfield(DiscriminationVector,a{1});
                 
                 out = net(netTrace);
                 
@@ -254,12 +272,7 @@ for i=iIn:iIn+9
                 end
                 %}
                 
-            elseif ANN == 1 && TypeIn(c) == 1
-                activeNeuron = 0;
-                %neuron = 0;
-                
             end
-            
             
             %---------------------------------------------------------------------------------------
             % PAES analysis.
@@ -288,7 +301,7 @@ for i=iIn:iIn+9
                     multiStopConditionsIn,numPeaks,pulse{c}(s),RTFLIn,RTFUpIn,ELETMatrix, ...
                     DiscriminationVector,neuron,activeNeuron,ggc);
                 
-                %try
+                try
                     
                     if sum(TypeIn(:) == 1) ~= 0
                         
@@ -301,12 +314,14 @@ for i=iIn:iIn+9
                             case 3
                                 crossTime{s}.gamma = crossTimeOut;
                                 
-                                if ANN == 1 && activeNeuron ~= 0
+                                %{
+                                if ANN == 1 && activeNeuron ~= 0 && isempty(activeNeuron) == 0
                                     'CALCULATE'
                                     crossTime{s}.gamma
                                     %crossTime{s}.gamma = crossTime{s}.gamma - ELETMatrix(activeNeuron,3);
                                     crossTime{s}.gamma
                                 end
+                                %}
                                 
                                 %'cross time gamma'
                                 %crossTime{s}.gamma(1)
@@ -325,14 +340,14 @@ for i=iIn:iIn+9
                         crossTime{s}.gamma4 = crossTimeOut;
                         
                     end
-                    %{
+                    
                 catch
                     errordlg('Check channel timing type.','Timing Error');
                     errorOccurred = true;
                     return;
                     
                 end
-                %}
+                
             end
         end
         
@@ -373,7 +388,7 @@ for i=iIn:iIn+9
     % Finding time difference between fractional value of MCP pulse and
     % x-crossover value of the gamma pulse.
     
-    %try
+    try
     
         if sum(TypeIn(:) == 1) ~= 0
             
@@ -404,8 +419,13 @@ for i=iIn:iIn+9
                     crossTime{s}
                     timeOfFlight(s) = (crossTime{s}.mcp(1) - crossTime{s}.gamma(1));
                     
-                    if ggc == 1
+                    if ggc == 1 && isempty(activeNeuron) == 0 && activeNeuron ~= 0 
+                        'SUBTRACTING'
                         timeOfFlight(s) = timeOfFlight(s) - ELETMatrix(activeNeuron,3);
+                        
+                    else
+                        timeOfFlight(s) = NaN;
+                        
                     end
                     
                 else
@@ -456,14 +476,14 @@ for i=iIn:iIn+9
             timeOfFlight(s) = 1;
             
         end
-        %{
+        
     catch
         errordlg('Check channel timing type.','Timing Error');
         errorOccurred = true;
         return;
         
     end
-    %}
+    
     %clearvars pulse;
     s = s + 1;
     pause(0.001);

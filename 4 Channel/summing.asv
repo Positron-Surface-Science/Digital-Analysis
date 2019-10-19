@@ -1,6 +1,6 @@
 
 summer = zeros(1024,1);
-for Ge = 172:246
+for Ge = 45:164
     for ToF = 1:1024
         %for Ge = 2633:3000
             summer(ToF) = summer(ToF) + electronVsElectron(Ge,ToF);

@@ -36,8 +36,8 @@ if noFolder == false && isnumeric(folderSelections) == false && exist(folderSele
                         elet1N = nif(e(3)+1:p(1)-1);
                         elet2N = nif(e(4)+1:p(2)-1);
                         
-                        ELETVector(neuron,1) = str2double(elet1N);
-                        ELETVector(neuron,2) = str2double(elet2N);
+                        ELETMatrix(neuron,1) = str2double(elet1N);
+                        ELETMatrix(neuron,2) = str2double(elet2N);
                         newValue = values(t);
                         
                         goodFile(n) = t;
@@ -54,7 +54,7 @@ if noFolder == false && isnumeric(folderSelections) == false && exist(folderSele
                 
                 cValues = coeffvalues(gaussFit);
                 
-                ELETVector(neuron,3) = cValues(2);
+                ELETMatrix(neuron,3) = cValues(2);
             end
     end
     

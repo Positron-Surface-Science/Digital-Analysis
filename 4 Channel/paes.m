@@ -23,14 +23,10 @@ foundFrac2 = 1;
 goodRiseTime = false;
 findingNoise = false;
 neuronTemp = neuron;
-exact = DiscriminationVector.exact;
+a = fieldnames(DiscriminationVector);
+exact = getfield(DiscriminationVector,a{1});
 'ACTIVE'
 activeNeuron
-if activeNeuron ~= 0
-exact(activeNeuron)
-ELETMatrix(activeNeuron,1)
-ELETMatrix(activeNeuron,2)
-end
 
 if TypeIn == 1 && ggc == 0
     neuronTemp = 0;
@@ -56,6 +52,7 @@ if TypeIn == 1 && ggc == 0
     'numPeaks'
     numPeaks
     
+    %plot(pulseIny(VMinIndex{c}-50:VMinIndex{c}+50))
     
     if numPeaks == 0 && multiStopConditionsIn ~= 6  && ...
             multiStopConditionsIn ~= 7
@@ -145,6 +142,32 @@ VMinFraction2 = zeros(1,numPeaks);
 numberOfPeaks = numPeaks;
 
 for s=1:numberOfPeaks
+    
+    if activeNeuron ~= 0
+        exact(activeNeuron)
+        ELETMatrix(activeNeuron,1)
+        ELETMatrix(activeNeuron,2)
+        
+    elseif TypeIn == 3 && isempty(activeNeuron)
+        crossTime(s) = NaN;
+        numPeaks = 0;
+        'neuron error'
+        break;
+        
+    elseif TypeIn == 3 && ggc == 1 && activeNeuron == 0
+        crossTime(s) = NaN;
+        numPeaks = 0;
+        'neuron error'
+        break;
+        
+    end
+    
+    if TypeIn == 1
+        assignin('base','pulseIny',pulseIny(VMinIndex{c}-100:VMinIndex{c}+100));
+        evalin('base','mcpTraces = horzcat(mcpTraces,pulseIny);');
+        
+    end
+    
     %'s'
     %s
     % Integrating peak and region before peak to reduce periodic noise
@@ -175,10 +198,11 @@ for s=1:numberOfPeaks
         VMinFraction = (0.42*VMin{c}(s));
         
         if TypeIn == 3 && ggc == 1
-            VMinFraction1 = (ELETMatrix(activeNeuron,1)*0.01*VMin{c}(s));
-            VMinFraction2 = (ELETMatrix(activeNeuron,2)*0.01*VMin{c}(s));
+            VMinFraction1 = (ELETMatrix(activeNeuron,1)*0.01*VMin{c}(s))
+            VMinFraction2 = (ELETMatrix(activeNeuron,2)*0.01*VMin{c}(s))
             %VMinFraction1 = (0.07*VMin{c}(s));
             %VMinFraction2 = (0.09*VMin{c}(s));
+            
         elseif TypeIn == 1
             VMinFraction1 = (0.4*VMin{c}(s));
             VMinFraction2 = (0.42*VMin{c}(s));
