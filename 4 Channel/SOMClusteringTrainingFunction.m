@@ -6,11 +6,11 @@
 %
 %   p5s - input data.
 
-x = treN;
+x = mcpTraces;
 
 % Create a Self-Organizing Map
-dimension1 = 12;
-dimension2 = 12;
+dimension1 = 10;
+dimension2 = 10;
 net = selforgmap([dimension1 dimension2],150,4,'hextop','linkdist');
 
 % Choose Plot Functions

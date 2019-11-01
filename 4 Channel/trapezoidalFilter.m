@@ -53,7 +53,14 @@ tau = (58000/(Ts/(10.^(-9))));%29250; % Decay constant of HPGe preamplifier. 580
 %tau
 % Requiring a minimum and maximum voltage to reduce noise and
 % over-pulses
-T = V > VLower && V < VUpper;
+try
+    T = V > VLower && V < VUpper;
+catch
+    trapezoidalPlateauAverage = 0;
+    vOut = [];
+    noGood = 1;
+    
+end
 
 if T == 1
     

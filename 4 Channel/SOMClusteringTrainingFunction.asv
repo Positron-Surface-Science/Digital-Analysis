@@ -6,19 +6,19 @@
 %
 %   p5s - input data.
 
-x = wtreN;
+x = mcpTracesMini;
 
 % Create a Self-Organizing Map
-dimension1 = 3;
-dimension2 = 3;
-net = selforgmap([dimension1 dimension2]);
+dimension1 = 5;
+dimension2 = 5;
+net = selforgmap([dimension1 dimension2],150,4,'hextop','linkdist');
 
 % Choose Plot Functions
 % For a list of all plot functions type: help nnplot
 %net.plotFcns = {'plotsomtop','plotsomnc','plotsomnd', ...
     %'plotsomplanes', 'plotsomhits', 'plotsompos'};
 
-net.trainParam.epochs = 500;
+net.trainParam.epochs = 100;
 
 % Train the Network
 [net,tr] = train(net,x);

@@ -2,7 +2,7 @@ function [VoutMax,timeOfFlight,errorOccurred,noFilesFound,dataFilter,baselineAve
     tripleCoincidence_GeTiming_Trapezoidal_Functional_Input(selectPathIn,...
     iIn,analysisTypeIn,multiStopIn,multiStopConditionsIn,TypeIn,timingTypeIn,shapingTypeIn,...
     FFTIn,coinCh,ggc,RTFLIn,RTFUpIn,TFTopIn,TFRFIn,TFTopInFast,TFRFInFast,BPFSwitch,dataFilter,...
-    DiscriminationVector,ELETMatrix,ClusteringNetwork,neuron)
+    DiscriminationVector,ELETMatrix,ClusteringNetwork,neuron,ELETParam)
 
 %---------------------------------------------------------------------------
 % Primary coincidence function. Reads the waveforms from the Lecroy
@@ -23,8 +23,14 @@ noFilesFound = false;
 goodCounter = 0;
 activeNeuron = 0;
 exact = ones(size(DiscriminationVector));
-a = fieldnames(ELETMatrix);
-ELETMatrix = getfield(ELETMatrix,a{1});
+assignin('base','ELET',ELETMatrix);
+if isstruct(ELETMatrix)
+    a = fieldnames(ELETMatrix);
+    ELETMatrix = getfield(ELETMatrix,a{1});
+end
+if isempty(ggc)
+    ggc = 0;
+end
 timingTypeChanged = false;
 
 % PAES analysis definitions.
@@ -210,29 +216,35 @@ for i=iIn:iIn+9
             % MCP and Gamma detector).
             %---------------------------------------------------------------------------------------
             
+            try
             if BPFSwitch == '1'
                 [pulse{c}(s).y,dataFilter,baseline] = bpfilter(pulse{c}(s),c,FFTIn,dataFilter);
+                baseline = mean(pulse{c}(s).y(round((offset-999E-9)/T):round((offset-500E-9)/T)));
+                pulse{c}(s).y = pulse{c}(s).y - baseline;
                 
             else
                 baseline = mean(pulse{c}(s).y(round((offset-999E-9)/T):round((offset-500E-9)/T)));
                 pulse{c}(s).y = pulse{c}(s).y - baseline;
                 
             end
-            
+            catch
+            end
             %---------------------------------------------------------------------------------------
             % ANN Analysis.
             %---------------------------------------------------------------------------------------
             
+            try
             if ANN == 1 && TypeIn(c) == 3
                 'ANN ON'
-                ggc = 1;
                 p = 1;
                 q = floor((1.25*p)/0.5);
                 FsN = (p/q)*Fs;
                 TsN = 1/FsN;
                 
+                
                 baseline = mean(oldPulse(round((offset-999E-9)/T):round((offset-500E-9)/T)));
                 oldPulse = oldPulse - baseline;
+                
                 
                 vIn = resample(oldPulse,p,q);
                 
@@ -254,6 +266,20 @@ for i=iIn:iIn+9
                 activeNeuron = find(out == 1)
                 neuron
                 %neuron = 0;
+                'ELET PARAMETERS'
+                ELETParam
+                
+                if  ggc == 1 && isempty(activeNeuron) == 0 && ...
+                        activeNeuron ~= neuron
+                    activeNeuron = 0;
+                    
+                elseif ggc == 1 && isempty(activeNeuron) == 0 && ...
+                        activeNeuron == neuron
+                    ELETMatrix(activeNeuron,1:2) = ELETParam;
+                    ELETMatrix(activeNeuron,3) = 0;
+                    
+                end
+                
                 
                 %{
                 if activeNeuron == neuron
@@ -273,7 +299,8 @@ for i=iIn:iIn+9
                 %}
                 
             end
-            
+            catch
+                end
             %---------------------------------------------------------------------------------------
             % PAES analysis.
             %---------------------------------------------------------------------------------------
@@ -299,7 +326,7 @@ for i=iIn:iIn+9
                 
                 [crossTimeOut,noGood(c,i),numPeaks,~] = paes(timingTypeIn(c),TypeIn(c),c,multiStopIn,...
                     multiStopConditionsIn,numPeaks,pulse{c}(s),RTFLIn,RTFUpIn,ELETMatrix, ...
-                    DiscriminationVector,neuron,activeNeuron,ggc);
+                    DiscriminationVector,neuron,activeNeuron,ANN,ggc);
                 
                 try
                     
@@ -389,7 +416,7 @@ for i=iIn:iIn+9
     % x-crossover value of the gamma pulse.
     
     try
-    
+        
         if sum(TypeIn(:) == 1) ~= 0
             
             if multiStopIn == '1'
@@ -398,6 +425,15 @@ for i=iIn:iIn+9
                 if sum(noGood(:,s)) == 0 && sum(noGoodS(:,s)) == 0
                     for p=1:numPeaks
                         timeOfFlight{s}(p) = (crossTime{s}.mcp(p) - crossTime{s}.gamma(1));
+                        
+                        if ANN == 1 && isempty(activeNeuron) == 0 && activeNeuron ~= 0
+                            'SUBTRACTING MULTI'
+                            timeOfFlight{s}(p) = timeOfFlight(s) - ELETMatrix(activeNeuron,3);
+                            
+                        else
+                            timeOfFlight(s) = NaN;
+                            
+                        end
                         
                         if timeOfFlight{s}(p) < -250*10.^(-9)
                             timeOfFlight{s}(p) = NaN;
@@ -419,9 +455,9 @@ for i=iIn:iIn+9
                     crossTime{s}
                     timeOfFlight(s) = (crossTime{s}.mcp(1) - crossTime{s}.gamma(1));
                     
-                    if ggc == 1 && isempty(activeNeuron) == 0 && activeNeuron ~= 0 
+                    if ANN == 1 && isempty(activeNeuron) == 0 && activeNeuron ~= 0 
                         'SUBTRACTING'
-                        timeOfFlight(s) = timeOfFlight(s) - ELETMatrix(activeNeuron,3);
+                        timeOfFlight(s) = timeOfFlight(s)% - ELETMatrix(activeNeuron,3);
                         
                     else
                         timeOfFlight(s) = NaN;

@@ -1,6 +1,6 @@
 function [crossTime,noGood,numberOfPeaks,riseTime] = paes(timingIn,TypeIn,c,...
     multiStopIn,multiStopConditionsIn,numPeaks,pulseIn,RTFLIn,RTFUpIn,ELETMatrix,...
-    DiscriminationVector,neuron,activeNeuron,ggc)
+    DiscriminationVector,neuron,activeNeuron,ANN,ggc)
 
 % --------------------------------------------------------------------------
 % 'PAES' function which calculates the crossing "pick-off" time of detector
@@ -26,7 +26,9 @@ neuronTemp = neuron;
 a = fieldnames(DiscriminationVector);
 exact = getfield(DiscriminationVector,a{1});
 'ACTIVE'
+TypeIn
 activeNeuron
+ANN
 
 if TypeIn == 1 && ggc == 0
     neuronTemp = 0;
@@ -142,19 +144,18 @@ VMinFraction2 = zeros(1,numPeaks);
 numberOfPeaks = numPeaks;
 
 for s=1:numberOfPeaks
-    
-    if activeNeuron ~= 0
-        exact(activeNeuron)
-        ELETMatrix(activeNeuron,1)
-        ELETMatrix(activeNeuron,2)
         
-    elseif TypeIn == 3 && isempty(activeNeuron)
+    if isempty(activeNeuron) ||  ...
+            isempty(VMinIndex{c}) || ...
+            VMinIndex{c}(1) - 100 <= 0
         crossTime(s) = NaN;
         numPeaks = 0;
         'neuron error'
         break;
+    
+    end
         
-    elseif TypeIn == 3 && ggc == 1 && activeNeuron == 0
+    if TypeIn == 3 && ANN == 1 && activeNeuron == 0
         crossTime(s) = NaN;
         numPeaks = 0;
         'neuron error'
@@ -162,17 +163,29 @@ for s=1:numberOfPeaks
         
     end
     
+    % MCP ANN
     if TypeIn == 1
-        assignin('base','pulseIny',pulseIny(VMinIndex{c}-100:VMinIndex{c}+100));
-        evalin('base','mcpTraces = horzcat(mcpTraces,pulseIny);');
-        
+        try
+            %{
+            assignin('base','pulseIny',pulseIny(VMinIndex{c}-100:VMinIndex{c}+100));
+            out = evalin('base','net(pulseIny);');
+            in = evalin('base','next;');
+            if in*out == 0
+                crossTime(s) = NaN;
+                numPeaks = numPeaks - 1;
+                riseTime = 1;
+                break;
+            end
+            %}
+        catch
+        end
     end
     
     %'s'
     %s
     % Integrating peak and region before peak to reduce periodic noise
     % pulses.
-    if (TypeIn == 1 && ggc == 0) && VMinIndex{c}(s)-round((100*10.^(-9)/dN)) > 0
+    if (TypeIn == 1 && ANN == 0) && VMinIndex{c}(s)-round((100*10.^(-9)/dN)) > 0
         integration = trapz(pulseIny(VMinIndex{c}(s)-round((100*10.^(-9)/dN)) ...
             :VMinIndex{c}(s)));
     elseif TypeIn == 1
@@ -180,7 +193,7 @@ for s=1:numberOfPeaks
         %'TypeIn 1'
     end
     
-    if (TypeIn == 1 && ggc == 0) && integration < 0.005
+    if (TypeIn == 1 && ANN == 0) && integration < 0.005
        numPeaks = numPeaks - 1;
        crossTime(s) = NaN;
        'integration'
@@ -196,20 +209,17 @@ for s=1:numberOfPeaks
     else
         % Fraction for CFD, ELET, and RTF.
         VMinFraction = (0.42*VMin{c}(s));
+        VMinFraction1 = (0.07*VMin{c}(s))
+        VMinFraction2 = (0.09*VMin{c}(s))
         
-        if TypeIn == 3 && ggc == 1
+        if TypeIn == 3 && ANN == 1
             VMinFraction1 = (ELETMatrix(activeNeuron,1)*0.01*VMin{c}(s))
             VMinFraction2 = (ELETMatrix(activeNeuron,2)*0.01*VMin{c}(s))
             %VMinFraction1 = (0.07*VMin{c}(s));
             %VMinFraction2 = (0.09*VMin{c}(s));
-            
-        elseif TypeIn == 1
-            VMinFraction1 = (0.4*VMin{c}(s));
-            VMinFraction2 = (0.42*VMin{c}(s));
-            
-        else
-            VMinFraction1 = (0.07*VMin{c}(s));
-            VMinFraction2 = (0.09*VMin{c}(s));
+            'ELET Parameters'
+            ELETMatrix(activeNeuron,1)
+            ELETMatrix(activeNeuron,2)
             
         end
         
@@ -217,7 +227,6 @@ for s=1:numberOfPeaks
         riseTimeHigher = (0.9*VMin{c}(s));
         %riseTimeLower = (0.1*VMin(c,s));
         %riseTimeHigher = (0.9*VMin(c,s));
-        %'ELET Parameters'
         
         % Charging from the peak towards lower time to find the closest value to
         % the fractional voltage.
@@ -339,7 +348,7 @@ for s=1:numberOfPeaks
         %}
         
         try
-            if TypeIn == 1
+            if TypeIn == 1 && ggc == 0
                 [~, foundFrac1] = min(abs(pulseIny(VMinIndex{c}(s)- ...
                     round((20*10.^(-9))/dN):VMinIndex{c}(s)) - VMinFraction1));
                 [~, foundFrac2] = min(abs(pulseIny(VMinIndex{c}(s)- ...
