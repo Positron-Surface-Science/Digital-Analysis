@@ -25,10 +25,7 @@ findingNoise = false;
 neuronTemp = neuron;
 a = fieldnames(DiscriminationVector);
 exact = getfield(DiscriminationVector,a{1});
-'ACTIVE'
-TypeIn
-activeNeuron
-ANN
+p = evalin('base','percentage;');
 
 if TypeIn == 1 && ggc == 0
     neuronTemp = 0;
@@ -150,7 +147,7 @@ for s=1:numberOfPeaks
             VMinIndex{c}(1) - 100 <= 0
         crossTime(s) = NaN;
         numPeaks = 0;
-        'neuron error'
+        %'neuron error'
         break;
     
     end
@@ -158,7 +155,7 @@ for s=1:numberOfPeaks
     if TypeIn == 3 && ANN == 1 && activeNeuron == 0
         crossTime(s) = NaN;
         numPeaks = 0;
-        'neuron error'
+        %'neuron error'
         break;
         
     end
@@ -209,17 +206,20 @@ for s=1:numberOfPeaks
     else
         % Fraction for CFD, ELET, and RTF.
         VMinFraction = (0.42*VMin{c}(s));
-        VMinFraction1 = (0.07*VMin{c}(s))
-        VMinFraction2 = (0.09*VMin{c}(s))
+        VMinFraction1 = (0.07*VMin{c}(s));
+        VMinFraction2 = (0.09*VMin{c}(s));
         
         if TypeIn == 3 && ANN == 1
-            VMinFraction1 = (ELETMatrix(activeNeuron,1)*0.01*VMin{c}(s))
-            VMinFraction2 = (ELETMatrix(activeNeuron,2)*0.01*VMin{c}(s))
+            VMinFraction1 = (p(activeNeuron,1)*0.01*VMin{c}(s))
+            VMinFraction2 = (p(activeNeuron,2)*0.01*VMin{c}(s))
+            
+            %VMinFraction1 = (ELETMatrix(activeNeuron,1)*0.01*VMin{c}(s))
+            %VMinFraction2 = (ELETMatrix(activeNeuron,2)*0.01*VMin{c}(s))
             %VMinFraction1 = (0.07*VMin{c}(s));
             %VMinFraction2 = (0.09*VMin{c}(s));
-            'ELET Parameters'
-            ELETMatrix(activeNeuron,1)
-            ELETMatrix(activeNeuron,2)
+            'ELET Parameters 2'
+            p(activeNeuron,1)
+            p(activeNeuron,2)
             
         end
         
@@ -300,13 +300,11 @@ for s=1:numberOfPeaks
     % ---------------------------------
     % ELET: finding channels corresponding to the two fractions.
     % ---------------------------------
-    activeNeuron
+    %activeNeuron
     elseif (timingIn == 0 || timingIn == 2 || timingIn == 4) && T ~= 0 && ...
-        VMinIndex{c}(s) > round(900E-9/dN) && (activeNeuron == 0 ...
-        || exact(activeNeuron) == 1)
-    if TypeIn == 1
-        'IN'
-    end
+            VMinIndex{c}(s) > round(900E-9/dN) && (activeNeuron == 0 ...
+            || exact(activeNeuron) == 1)
+        
         %{
         stop1 = 0;
         stop2 = 0;
@@ -363,8 +361,8 @@ for s=1:numberOfPeaks
                 [~, foundFrac2] = min(abs(pulseIny(VMinIndex{c}(s)-round(900E-9/dN): ...
                     VMinIndex{c}(s)) - VMinFraction2));
                 
-                foundFrac1 = foundFrac1 + VMinIndex{c}(s) - round(900E-9/dN);
-                foundFrac2 = foundFrac2 + VMinIndex{c}(s) - round(900E-9/dN);
+                foundFrac1 = foundFrac1 + VMinIndex{c}(s) - round(900E-9/dN)
+                foundFrac2 = foundFrac2 + VMinIndex{c}(s) - round(900E-9/dN)
                 
                 if findingNoise == true
                     foundNoise = false;
@@ -478,8 +476,7 @@ for s=1:numberOfPeaks
         foundFrac = 1;
         
     end
-    foundFrac1
-        foundFrac2
+    
     % CFD pulseIn interpolation.
     
     if TypeIn ~= 1 && s > 1
@@ -526,7 +523,8 @@ for s=1:numberOfPeaks
             count1 < 0.99*numel(pulseIny) && count2 < 0.99*numel(pulseIny) && ...
             foundFrac1 < 0.99*numel(pulseIny) && foundFrac2 < 0.99*numel(pulseIny) && ...
             foundFrac2 - foundFrac1 <= round(900E-9/dN) && T ~= 0 && ...
-            pulseIny(foundFrac2) < 0.9*VMin{c}(s)
+            pulseIny(foundFrac2) < 0.9*VMin{c}(s) && foundFrac1 ~= foundFrac2 ...
+            %&& (activeNeuron == 0 || (exact(activeNeuron) == 1 && activeNeuron == neuron))
         
         % Determining the x (time) and y (voltage) values of the
         % discovered fractions.
@@ -549,7 +547,7 @@ for s=1:numberOfPeaks
         index = index + 10;
         %}
         try
-            baseline = mean(pulseIny(round(13E-6/dN):round(14E-6/dN)));
+            baseline = 0;%mean(pulseIny(round(13E-6/dN):round(14E-6/dN)));
         catch
             baseline = 0;
         end
@@ -567,13 +565,16 @@ for s=1:numberOfPeaks
             timingIndex+round(5E-9/dN)),1);
         [warnMsg, ~] = lastwarn;
         %}
-        'FOUND'
-        foundFrac1
-        foundFrac2
+        
         lastwarn('');
         pFit = polyfit(pulseInx(foundFrac1:foundFrac2),pulseIny(foundFrac1:foundFrac2),1);
         [warnMsg, ~] = lastwarn;
         
+        try
+        fitEval = polyval(pFit,pulseInx(foundFrac1:foundFrac2));
+        baseline = fitEval(1);
+        catch
+        end
         % Rise time filter based on linear fit.
         if TypeIn == 3
             

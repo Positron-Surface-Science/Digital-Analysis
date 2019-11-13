@@ -23,38 +23,38 @@ if noFolder == false && isnumeric(folderSelections) == false && exist(folderSele
         
         for t=1:numFiles
             try
-            nif = fileList(t).name;
-            e = strfind(nif,'_');
-            p = strfind(nif,'%');
-            k = strfind(nif,'FWHM');
-            
-            if isempty(k) == 0
-                n
-                goodMatrix = importdata([folderSelections,'\',folderName,'\',nif]);
+                nif = fileList(t).name;
+                e = strfind(nif,'_');
+                p = strfind(nif,'%');
+                k = strfind(nif,'FWHM');
                 
-                gaussFit = fit(x,goodMatrix,'gauss1');
-                
-                cValues = coeffvalues(gaussFit);
-                
-                numbers = cValues(3);%nif(e(5)+1:k-1);
-                values(t) = numbers;
-                
-                if t > 1 && values(t) < values(t-1) && ...
-                        values(t) < newValue && ...
-                        values(t) > 0
-                    elet1N = nif(e(3)+1:p(1)-1);
-                    elet2N = nif(e(4)+1:p(2)-1);
+                if isempty(k) == 0
+                    n
+                    goodMatrix = importdata([folderSelections,'\',folderName,'\',nif]);
                     
-                    ELETMatrix(neuron,1) = str2double(elet1N);
-                    ELETMatrix(neuron,2) = str2double(elet2N);
-                    ELETMatrix(neuron,3) = cValues(2);
-                    newValue = values(t);
+                    gaussFit = fit(x,goodMatrix,'gauss1');
                     
-                    goodFile(n) = t;
+                    cValues = coeffvalues(gaussFit);
+                    
+                    numbers = cValues(3);%nif(e(5)+1:k-1);
+                    values(t) = numbers;
+                    
+                    if t > 1 && values(t) < values(t-1) && ...
+                            values(t) < newValue && ...
+                            values(t) > 0
+                        elet1N = nif(e(3)+1:p(1)-1);
+                        elet2N = nif(e(4)+1:p(2)-1);
+                        
+                        ELETMatrix(neuron,1) = str2double(elet1N);
+                        ELETMatrix(neuron,2) = str2double(elet2N);
+                        ELETMatrix(neuron,3) = cValues(2);
+                        newValue = values(t);
+                        
+                        goodFile(n) = t;
+                        
+                    end
                     
                 end
-                
-            end
             catch
             end
         end

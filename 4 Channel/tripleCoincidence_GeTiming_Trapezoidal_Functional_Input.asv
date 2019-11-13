@@ -22,6 +22,7 @@ seeingNoFiles = 0;
 noFilesFound = false;
 goodCounter = 0;
 activeNeuron = 0;
+neuron = 0;
 exact = ones(size(DiscriminationVector));
 assignin('base','ELET',ELETMatrix);
 if isstruct(ELETMatrix)
@@ -31,8 +32,9 @@ end
 if isempty(ggc)
     ggc = 0;
 end
-timingTypeChanged = false;
 ggc = 1;
+timingTypeChanged = false;
+
 % PAES analysis definitions.
 
 if multiStopIn ~= '1'
@@ -53,19 +55,19 @@ for i=iIn:iIn+9
     for c=1:numChannels
         
         if TypeIn(c) ~= 4
-            'TYPEIN'
-            TypeIn(c)
-            timingTypeIn(c)
+            %'TYPEIN'
+            %TypeIn(c)
+            %timingTypeIn(c)
             if TypeIn(c) == 3 && (timingTypeIn(c) == 4 || ...
                     timingTypeChanged == true)
                 ANN = 1;
                 timingTypeIn(c) = 0;
                 timingTypeChanged = true;
-                'ANN ACTIVE'
+                %'ANN ACTIVE'
             else
                 ANN = 0;
                 activeNeuron = 0;
-                'ANN NOT ACTIVE'
+                %'ANN NOT ACTIVE'
             end
             
             noFile = true;
@@ -229,11 +231,18 @@ for i=iIn:iIn+9
             end
             catch
             end
+            
+            if TypeIn(1) == 4 && TypeIn(c) == 3
+                assignin('base','trace',pulse{c}(s).y(round((offset-999E-9)/T):round((offset+500E-9)/T)));
+                evalin('base','NaITraces = horzcat(NaITraces,trace(2550:3000));');
+            
+            end
+            
             %---------------------------------------------------------------------------------------
             % ANN Analysis.
             %---------------------------------------------------------------------------------------
             
-            try
+            %try
             if ANN == 1 && TypeIn(c) == 3
                 'ANN ON'
                 p = 1;
@@ -241,11 +250,13 @@ for i=iIn:iIn+9
                 FsN = (p/q)*Fs;
                 TsN = 1/FsN;
                 
-                
                 baseline = mean(oldPulse(round((offset-999E-9)/T):round((offset-500E-9)/T)));
                 oldPulse = oldPulse - baseline;
                 
-                
+                assignin('base','trace',pulse{c}(s).y(
+                evalin('base'
+                % ---------------------------------
+                % HPGe
                 vIn = resample(oldPulse,p,q);
                 
                 netTrace = vIn(round(14.5E-6/TsN):round(18E-6/TsN));
@@ -253,10 +264,23 @@ for i=iIn:iIn+9
                 netTrace = netTrace(150:550);
                 
                 netTrace = netTrace/max(netTrace);
+                % ---------------------------------
                 
+                %{
+                % ---------------------------------
+                % NaI
+                netTrace = oldPulse(round((offset-999E-9)/T):round((offset+500E-9)/T));
+                
+                netTrace = netTrace(2550:3000);
+                netTrace = netTrace(1:250);
+                
+                netTrace = netTrace/min(netTrace);
+                % ---------------------------------
+                %}
+                assignin('base','netTrace',netTrace);
                 a = fieldnames(ClusteringNetwork);
-                net = getfield(ClusteringNetwork,a{1});
-                
+                net = evalin('base','net;');%getfield(ClusteringNetwork,a{1});
+                p = evalin('base','percentage;');
                 a = fieldnames(DiscriminationVector);
                 exact = getfield(DiscriminationVector,a{1});
                 
@@ -265,21 +289,21 @@ for i=iIn:iIn+9
                 'Active Neuron'
                 activeNeuron = find(out == 1)
                 neuron
-                %neuron = 0;
+                
                 'ELET PARAMETERS'
                 ELETParam
                 
-                if  ggc == 1 && isempty(activeNeuron) == 0 && ...
-                        activeNeuron ~= neuron
-                    %activeNeuron = 0;
+                if  ggc == 1 && (isempty(activeNeuron) || ...
+                        activeNeuron ~= neuron)
+                    activeNeuron = 0;
                     
                 elseif ggc == 1 && isempty(activeNeuron) == 0 && ...
                         activeNeuron == neuron
-                    %ELETMatrix(activeNeuron,1:2) = ELETParam;
-                    %ELETMatrix(activeNeuron,3) = 0;
+                    ELETMatrix(activeNeuron,1:2) = p(activeNeuron,:);%ELETParam;
+                    ELETMatrix(activeNeuron,3) = 0;
+                    'EQUAL'
                     
                 end
-                
                 
                 %{
                 if activeNeuron == neuron
@@ -299,8 +323,8 @@ for i=iIn:iIn+9
                 %}
                 
             end
-            catch
-                end
+            %catch
+            %    end
             %---------------------------------------------------------------------------------------
             % PAES analysis.
             %---------------------------------------------------------------------------------------
@@ -328,8 +352,8 @@ for i=iIn:iIn+9
                     multiStopConditionsIn,numPeaks,pulse{c}(s),RTFLIn,RTFUpIn,ELETMatrix, ...
                     DiscriminationVector,neuron,activeNeuron,ANN,ggc);
                 
-                try
-                    
+                %try
+                
                     if sum(TypeIn(:) == 1) ~= 0
                         
                         switch TypeIn(c)
@@ -367,14 +391,14 @@ for i=iIn:iIn+9
                         crossTime{s}.gamma4 = crossTimeOut;
                         
                     end
-                    
+               %{     
                 catch
                     errordlg('Check channel timing type.','Timing Error');
                     errorOccurred = true;
                     return;
                     
                 end
-                
+                %}
             end
         end
         
@@ -415,7 +439,7 @@ for i=iIn:iIn+9
     % Finding time difference between fractional value of MCP pulse and
     % x-crossover value of the gamma pulse.
     
-    try
+    %try
         
         if sum(TypeIn(:) == 1) ~= 0
             
@@ -450,14 +474,17 @@ for i=iIn:iIn+9
             else
                 
                 if sum(noGood(:,s)) == 0 && sum(noGoodS(:,s)) == 0
-                    length(crossTime)
-                    s
-                    crossTime{s}
-                    timeOfFlight(s) = (crossTime{s}.mcp(1) - crossTime{s}.gamma(1));
                     
-                    if ANN == 1 && isempty(activeNeuron) == 0 && activeNeuron ~= 0 
+                    timeOfFlight(s) = (crossTime{s}.mcp(1) - crossTime{s}.gamma(1));
+                    %{
+                    'mcp'
+                    crossTime{s}.mcp(1)
+                    'gamma'
+                    crossTime{s}.gamma(1)
+                    %}
+                    if ANN == 0 || (ANN == 1 && isempty(activeNeuron) == 0 && activeNeuron ~= 0)
                         'SUBTRACTING'
-                        timeOfFlight(s) = timeOfFlight(s) - ELETMatrix(activeNeuron,3);
+                        timeOfFlight(s) = timeOfFlight(s)% - ELETMatrix(activeNeuron,3);
                         
                     else
                         timeOfFlight(s) = NaN;
@@ -512,14 +539,14 @@ for i=iIn:iIn+9
             timeOfFlight(s) = 1;
             
         end
-        
+       %{ 
     catch
         errordlg('Check channel timing type.','Timing Error');
         errorOccurred = true;
         return;
         
     end
-    
+    %}
     %clearvars pulse;
     s = s + 1;
     pause(0.001);

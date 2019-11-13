@@ -1,0 +1,23 @@
+%for j=1:100
+    
+    nt=[];
+    
+    %if output2(j) >= 2500
+        
+        for i=1:500
+            
+            compares = ClusteringNetwork.net(mcpTraces(:,i));
+            
+            if compares(j) == 1
+                
+                nt = horzcat(nt,mcpTraces(:,i));
+                
+            end
+            
+        end
+        
+        figure
+        plot(nt)
+        
+    %end
+%end
