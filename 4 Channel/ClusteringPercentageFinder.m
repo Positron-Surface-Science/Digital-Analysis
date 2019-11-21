@@ -4,30 +4,34 @@ ax1 = axes(f1);
 f2 = figure;
 ax2 = axes(f2);
 
-%x = linspace(1,401,401);
+x = linspace(1,438,438);
 
 %percentage = zeros(144,2);
 range1 = 160;
 range2 = 180;
 
-for j=1:144
+netMatrix = net(tN(:,1:75000));
+
+for j=1:225
     
     nt=[];
     
-    if exact(j) == 1 && percentage2(j) ~= 0 %&& ...
-            %(percentage(j) < 0.01 || percentage(j) >= 0.95)
-            
-        netMatrix = net(treN);
+    if exact(j) == 1
         
-        nt = treN(:,netMatrix(j,:) == 1);
+        nt = tN(:,netMatrix(j,:) == 1);
         
         plot(ax1,x,nt)
         xticks(ax1,0:10:400);
         grid(ax1,'on')
         beep
         j
-        %yesno = input('Good Traces? (y/n): ','s');
+        yesno = input('Good Traces? (y/n): ','s');
         
+        if yesno == 'n'
+            exact(j) = 0;
+            
+        end
+        %{
         if yesno == 'y'
         
             template = mean(nt,2);
@@ -62,5 +66,6 @@ for j=1:144
             percentage(j,:)
             
         end
+        %}
     end
 end

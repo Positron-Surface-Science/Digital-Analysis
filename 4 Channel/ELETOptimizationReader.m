@@ -1,8 +1,9 @@
-ELETMatrix = zeros(length(exact),3);
+ELETMatrix = zeros(length(exact),4);
 noFolder = false;
+FWHMVector = zeros(length(exact),1);
 
 try
-    folderSelections = 'C:\Saved Data Analysis - Lecroy\Ge\2019\September\HPGe_NaI_Coincidence_20kV_Zeolite-AsReceived\ANNDataCollection\Neurons'%uigetdir;
+    folderSelections = 'C:\Saved Data Analysis - Lecroy\Ge\2019\September\HPGe_BaF2_Coincidence_1000V_ZeolitePowder-Baked\ANN Analysis On\9x25Network\Neurons'%uigetdir;
 catch
     noFolder = true;
 end
@@ -22,7 +23,7 @@ if noFolder == false && isnumeric(folderSelections) == false && exist(folderSele
         newValue = 1;
         
         for t=1:numFiles
-            try
+            %try
                 nif = fileList(t).name;
                 e = strfind(nif,'_');
                 p = strfind(nif,'%');
@@ -32,11 +33,11 @@ if noFolder == false && isnumeric(folderSelections) == false && exist(folderSele
                     n
                     goodMatrix = importdata([folderSelections,'\',folderName,'\',nif]);
                     
-                    gaussFit = fit(x,goodMatrix,'gauss1');
+                    gaussFit = fit(xdataToF,goodMatrix,'gauss1');
                     
                     cValues = coeffvalues(gaussFit);
                     
-                    numbers = cValues(3);%nif(e(5)+1:k-1);
+                    numbers = (2*sqrt(log(2))*cValues(3))/sqrt(2);%nif(e(5)+1:k-1);
                     values(t) = numbers;
                     
                     if t > 1 && values(t) < values(t-1) && ...
@@ -48,6 +49,8 @@ if noFolder == false && isnumeric(folderSelections) == false && exist(folderSele
                         ELETMatrix(neuron,1) = str2double(elet1N);
                         ELETMatrix(neuron,2) = str2double(elet2N);
                         ELETMatrix(neuron,3) = cValues(2);
+                        ELETMatrix(neuron,4) = values(t);
+                        
                         newValue = values(t);
                         
                         goodFile(n) = t;
@@ -55,8 +58,8 @@ if noFolder == false && isnumeric(folderSelections) == false && exist(folderSele
                     end
                     
                 end
-            catch
-            end
+           % catch
+            %end
         end
         
         %{

@@ -22,9 +22,7 @@ seeingNoFiles = 0;
 noFilesFound = false;
 goodCounter = 0;
 activeNeuron = 0;
-neuron = 0;
 exact = ones(size(DiscriminationVector));
-assignin('base','ELET',ELETMatrix);
 if isstruct(ELETMatrix)
     a = fieldnames(ELETMatrix);
     ELETMatrix = getfield(ELETMatrix,a{1});
@@ -51,7 +49,7 @@ baselineAverage = 0;
 for i=iIn:iIn+9
     
     numPeaks = 1;
-    
+    evalin('base','flags = 0;');
     for c=1:numChannels
         
         if TypeIn(c) ~= 4
@@ -232,11 +230,13 @@ for i=iIn:iIn+9
             catch
             end
             
+            %{
             if TypeIn(1) == 4 && TypeIn(c) == 3
                 assignin('base','trace',pulse{c}(s).y(round((offset-999E-9)/T):round((offset+500E-9)/T)));
                 evalin('base','NaITraces = horzcat(NaITraces,trace(2550:3000));');
             
             end
+            %}
             
             %---------------------------------------------------------------------------------------
             % ANN Analysis.
@@ -252,9 +252,12 @@ for i=iIn:iIn+9
                 
                 baseline = mean(oldPulse(round((offset-999E-9)/T):round((offset-500E-9)/T)));
                 oldPulse = oldPulse - baseline;
-                
+                %{
+                if evalin('base','flags;') == 1
                 assignin('base','trace',pulse{c}(s).y(18626:19063));
-                evalin('base','traces = horzcat(traces,trace);');
+                evalin('base','traces2 = horzcat(traces2,trace);');
+                end
+                
                 % ---------------------------------
                 % HPGe
                 vIn = resample(oldPulse,p,q);
@@ -265,7 +268,16 @@ for i=iIn:iIn+9
                 
                 netTrace = netTrace/max(netTrace);
                 % ---------------------------------
+                %}
                 
+                % ---------------------------------
+                % HPGe 9x25 Network
+                netTrace = pulse{c}(s).y(18626:19063);
+                
+                netTrace = netTrace/max(netTrace);
+                % ---------------------------------
+                %assignin('base','p',pulse{c}(s).y(18626:19063)/max(pulse{c}(s).y(18626:19063)));
+                %crossing(s) = evalin('base','net3(p);')
                 %{
                 % ---------------------------------
                 % NaI
@@ -277,10 +289,9 @@ for i=iIn:iIn+9
                 netTrace = netTrace/min(netTrace);
                 % ---------------------------------
                 %}
-                assignin('base','netTrace',netTrace);
+                %assignin('base','netTrace',netTrace);
                 a = fieldnames(ClusteringNetwork);
-                net = evalin('base','net;');%getfield(ClusteringNetwork,a{1});
-                p = evalin('base','percentage;');
+                net = getfield(ClusteringNetwork,a{1});
                 a = fieldnames(DiscriminationVector);
                 exact = getfield(DiscriminationVector,a{1});
                 
@@ -292,6 +303,13 @@ for i=iIn:iIn+9
                 
                 'ELET PARAMETERS'
                 ELETParam
+                ELETMatrix(activeNeuron,1:2)
+                
+                'FWHM'
+                ELETMatrix(activeNeuron,4)
+                
+                'exact'
+                %exact(neuron)
                 
                 if  ggc == 1 && (isempty(activeNeuron) || ...
                         activeNeuron ~= neuron)
@@ -299,7 +317,7 @@ for i=iIn:iIn+9
                     
                 elseif ggc == 1 && isempty(activeNeuron) == 0 && ...
                         activeNeuron == neuron
-                    ELETMatrix(activeNeuron,1:2) = p(activeNeuron,:);%ELETParam;
+                    ELETMatrix(activeNeuron,1:2) = ELETParam;
                     ELETMatrix(activeNeuron,3) = 0;
                     'EQUAL'
                     
