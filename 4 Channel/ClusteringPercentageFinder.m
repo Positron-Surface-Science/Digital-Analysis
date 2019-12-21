@@ -1,8 +1,8 @@
 
 f1 = figure;
 ax1 = axes(f1);
-f2 = figure;
-ax2 = axes(f2);
+%f2 = figure;
+%ax2 = axes(f2);
 
 x = linspace(1,438,438);
 
@@ -10,20 +10,22 @@ x = linspace(1,438,438);
 range1 = 160;
 range2 = 180;
 
-netMatrix = net(tN(:,1:75000));
+%netMatrix = net(nT(:,1:75000));
+nt = [];
 
-for j=1:225
+for j=51:400
     
     nt=[];
     
-    if exact(j) == 1
+    %if exact(j) == 1
         
-        nt = tN(:,netMatrix(j,:) == 1);
+        nt = nT(:,netMatrix(j,:) == 1);
         
+        if ~isempty(nt)
         plot(ax1,x,nt)
         xticks(ax1,0:10:400);
         grid(ax1,'on')
-        beep
+        %beep
         j
         yesno = input('Good Traces? (y/n): ','s');
         
@@ -31,6 +33,9 @@ for j=1:225
             exact(j) = 0;
             
         end
+        
+        end
+        
         %{
         if yesno == 'y'
         
@@ -67,5 +72,5 @@ for j=1:225
             
         end
         %}
-    end
+    %end
 end

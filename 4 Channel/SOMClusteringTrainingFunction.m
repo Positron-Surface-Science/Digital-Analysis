@@ -6,11 +6,11 @@
 %
 %   p5s - input data.
 
-x = tN(:,1:75000);
+x = nT(:,1:75000);
 
 % Create a Self-Organizing Map
-dimension1 = 9;
-dimension2 = 25;
+dimension1 = 20;
+dimension2 = 20;
 net = selforgmap([dimension1 dimension2],150,4,'hextop','linkdist');
 
 % Choose Plot Functions

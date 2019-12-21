@@ -23,6 +23,10 @@ noFilesFound = false;
 goodCounter = 0;
 activeNeuron = 0;
 exact = ones(size(DiscriminationVector));
+if isempty(neuron)
+    neuron = 0;
+end
+neuron = 0;
 if isstruct(ELETMatrix)
     a = fieldnames(ELETMatrix);
     ELETMatrix = getfield(ELETMatrix,a{1});
@@ -30,8 +34,9 @@ end
 if isempty(ggc)
     ggc = 0;
 end
-ggc = 1;
+ggc = 0;
 timingTypeChanged = false;
+numPeaks = 0;
 
 % PAES analysis definitions.
 
@@ -46,10 +51,9 @@ noGoodS = zeros(4,10);
 s = 1;
 baselineAverage = 0;
 
-for i=iIn:iIn+9
+for n=iIn:iIn+9
     
-    numPeaks = 1;
-    evalin('base','flags = 0;');
+    %evalin('base','flags = 0;');
     for c=1:numChannels
         
         if TypeIn(c) ~= 4
@@ -57,20 +61,28 @@ for i=iIn:iIn+9
             %TypeIn(c)
             %timingTypeIn(c)
             if TypeIn(c) == 3 && (timingTypeIn(c) == 4 || ...
-                    timingTypeChanged == true)
+                    timingTypeIn(c) == 1 || timingTypeChanged == true)
                 ANN = 1;
+                ggc = 1;
                 timingTypeIn(c) = 0;
                 timingTypeChanged = true;
-                %'ANN ACTIVE'
+                'ANN ACTIVE FOR TIMING'
+                
+            elseif TypeIn(c) == 3 && shapingTypeIn(c) == 0 && timingTypeIn(c) ~= 0
+                ANN = 1;
+                'ANN ACTIVE FOR SHAPING'
+                
             else
                 ANN = 0;
                 activeNeuron = 0;
-                %'ANN NOT ACTIVE'
+                'ANN NOT ACTIVE'
             end
-            
+            %s
+            %'channel #'
+            %c
             noFile = true;
             noFileCounter = 1;
-            noGood(c,i) = false;
+            noGood(c,s) = false;
             
             %---------------------------------------------------------------------------------------
             % Calling ReadLeCroyBinaryWaveform function from waveform function file to
@@ -78,35 +90,40 @@ for i=iIn:iIn+9
             %---------------------------------------------------------------------------------------
             
             if (true)
+            
+                lo = dir([selectPath,'\*00001.trc']);
+                k = strfind(lo(1).name,'Trace');
+                
+            if isempty(k)%(true)
                 channelNumber{c} = ['C',stringconversion(c),'1'];
                 
-                if i < 10
-                    appendage = ['0000',stringconversion(i)];
-                elseif i >= 10 && i < 100
-                    appendage = ['000',stringconversion(i)];
-                elseif i >= 100 && i < 1000
-                    appendage = ['00',stringconversion(i)];
-                elseif i >= 1000 && i < 10000
-                    appendage = ['0',stringconversion(i)];
+                if n < 10
+                    appendage = ['0000',stringconversion(n)];
+                elseif n >= 10 && n < 100
+                    appendage = ['000',stringconversion(n)];
+                elseif n >= 100 && n < 1000
+                    appendage = ['00',stringconversion(n)];
+                elseif n >= 1000 && n < 10000
+                    appendage = ['0',stringconversion(n)];
                 else
-                    appendage = stringconversion(i);
+                    appendage = stringconversion(n);
                 end
                 
             end
             
-            if (false)
+            if ~isempty(k)%(false)
                 channelNumber{c} = ['C',stringconversion(c),'Trace'];
                 
-                if i < 10
-                    appendage = ['0000',stringconversion(i)];
-                elseif i >= 10 && i < 100
-                    appendage = ['000',stringconversion(i)];
-                elseif i >= 100 && i < 1000
-                    appendage = ['00',stringconversion(i)];
-                elseif i >= 1000 && i < 10000
-                    appendage = ['0',stringconversion(i)];
+                if n < 10
+                    appendage = ['0000',stringconversion(n)];
+                elseif n >= 10 && n < 100
+                    appendage = ['000',stringconversion(n)];
+                elseif n >= 100 && n < 1000
+                    appendage = ['00',stringconversion(n)];
+                elseif n >= 1000 && n < 10000
+                    appendage = ['0',stringconversion(n)];
                 else
-                    appendage = stringconversion(i);
+                    appendage = stringconversion(n);
                 end
                 
             end
@@ -115,26 +132,26 @@ for i=iIn:iIn+9
                 channelNumber{c} = ['C',stringconversion(c),'XX'];
                 %appendage = num2str(i-1,'%05.f');
                 
-                if i < 10
-                    appendage = ['000000000',stringconversion(i)];
-                elseif i >= 10 && i < 100
-                    appendage = ['00000000',stringconversion(i)];
-                elseif i >= 100 && i < 1000
-                    appendage = ['0000000',stringconversion(i)];
-                elseif i >= 1000 && i < 10000
-                    appendage = ['000000',stringconversion(i)];
-                elseif i >= 10000 && i < 100000
-                    appendage = ['00000',stringconversion(i)];
-                elseif i >= 100000 && i < 1000000
-                    appendage = ['0000',stringconversion(i)];
-                elseif i >= 1000000 && i < 10000000
-                    appendage = ['000',stringconversion(i)];
-                elseif i >= 10000000 && i < 100000000
-                    appendage = ['00',stringconversion(i)];
-                elseif i >= 10000000 && i < 100000000
-                    appendage = ['0',stringconversion(i)];
+                if n < 10
+                    appendage = ['000000000',stringconversion(n)];
+                elseif n >= 10 && n < 100
+                    appendage = ['00000000',stringconversion(n)];
+                elseif n >= 100 && n < 1000
+                    appendage = ['0000000',stringconversion(n)];
+                elseif n >= 1000 && n < 10000
+                    appendage = ['000000',stringconversion(n)];
+                elseif n >= 10000 && n < 100000
+                    appendage = ['00000',stringconversion(n)];
+                elseif n >= 100000 && n < 1000000
+                    appendage = ['0000',stringconversion(n)];
+                elseif n >= 1000000 && n < 10000000
+                    appendage = ['000',stringconversion(n)];
+                elseif n >= 10000000 && n < 100000000
+                    appendage = ['00',stringconversion(n)];
+                elseif n >= 10000000 && n < 100000000
+                    appendage = ['0',stringconversion(n)];
                 else
-                    appendage = stringconversion(i);
+                    appendage = stringconversion(n);
                 end
                 
             end
@@ -160,14 +177,18 @@ for i=iIn:iIn+9
                 end
                 
                 if noFileCounter >= 5
-                    noGood(c,i) = true;
+                    noGood(c,s) = true;
                     if multiStopIn == '0'
-                        timeOfFlight(c) = 1;
+                        timeOfFlight(c) = NaN;
+                        'nofilecounter'
+                        
                     else
                         timeOfFlight = zeros(1,10) + 1;
+                        
                     end
                     
                     noFilesFound = true;
+                    'no files'
                     return;
                     
                 end
@@ -194,20 +215,16 @@ for i=iIn:iIn+9
             T = (1/Fs);
             oldPulse = pulse{c}(s).y;
             
-            %---------------------------------------------------------------------------------------
-            % HPGe pulse analysis (trapezoidal).
-            %---------------------------------------------------------------------------------------
+            end
             
-            if (TypeIn(c) == 3 || TypeIn(c) == 2) && shapingTypeIn(c) ~= 8
-                [TPA,~,noGoodS(c,i)] = trapezoidalFilter(pulse{c}(s),oldPulse,shapingTypeIn(c),TFRFIn(c),TFTopIn(c));
+            if (false)
+                [pulse{c}(s).x pulse{c}(s).y,tCell] = DRS4BinaryDataOpenTest(c,n);
                 
-                VoutMax{c}(s) = TPA;
-                
-                if noGoodS(c,i) == false
-                    goodCounter = goodCounter + 1;
-                    %baselineAverage = baselineAverage + baseline;
-                    
-                end
+                offset = tCell;
+                Fs = 1.224;
+                T = (1/Fs);
+                pulse{c}(s).desc.Ts = T;
+                oldPulse = pulse{c}(s).y;
                 
             end
             
@@ -217,17 +234,18 @@ for i=iIn:iIn+9
             %---------------------------------------------------------------------------------------
             
             try
-            if BPFSwitch == '1'
-                [pulse{c}(s).y,dataFilter,baseline] = bpfilter(pulse{c}(s),c,FFTIn,dataFilter);
-                baseline = mean(pulse{c}(s).y(round((offset-999E-9)/T):round((offset-500E-9)/T)));
-                pulse{c}(s).y = pulse{c}(s).y - baseline;
-                
-            else
-                baseline = mean(pulse{c}(s).y(round((offset-999E-9)/T):round((offset-500E-9)/T)));
-                pulse{c}(s).y = pulse{c}(s).y - baseline;
-                
-            end
+                if BPFSwitch == '1'
+                    [pulse{c}(s).y,dataFilter,baseline] = bpfilter(pulse{c}(s),c,FFTIn,dataFilter);
+                    baseline = mean(pulse{c}(s).y(round((offset-999E-9)/T):round((offset-500E-9)/T)));
+                    pulse{c}(s).y = pulse{c}(s).y - baseline;
+                    
+                else
+                    baseline = mean(pulse{c}(s).y(round((offset-999E-9)/T):round((offset-500E-9)/T)));
+                    pulse{c}(s).y = pulse{c}(s).y - baseline;
+                    
+                end
             catch
+                'bpf error'
             end
             
             %{
@@ -250,14 +268,18 @@ for i=iIn:iIn+9
                 FsN = (p/q)*Fs;
                 TsN = 1/FsN;
                 
-                baseline = mean(oldPulse(round((offset-999E-9)/T):round((offset-500E-9)/T)));
-                oldPulse = oldPulse - baseline;
-                %{
-                if evalin('base','flags;') == 1
-                assignin('base','trace',pulse{c}(s).y(18626:19063));
-                evalin('base','traces2 = horzcat(traces2,trace);');
+                try
+                    baseline = mean(oldPulse(round((offset-999E-9)/T):round((offset-500E-9)/T)));
+                    oldPulse = oldPulse - baseline;
+                catch
+                    'bpf error 2'
                 end
                 
+                %if evalin('base','flags;') == 1
+                %assignin('base','trace',pulse{c}(s).y(18626:19063));
+                %evalin('base','traces = horzcat(traces,trace);');
+                %end
+                %{
                 % ---------------------------------
                 % HPGe
                 vIn = resample(oldPulse,p,q);
@@ -275,6 +297,7 @@ for i=iIn:iIn+9
                 netTrace = pulse{c}(s).y(18626:19063);
                 
                 netTrace = netTrace/max(netTrace);
+                %assignin('base','xTrace',pulse{c}(s).x(18626:19063));
                 % ---------------------------------
                 %assignin('base','p',pulse{c}(s).y(18626:19063)/max(pulse{c}(s).y(18626:19063)));
                 %crossing(s) = evalin('base','net3(p);')
@@ -291,7 +314,13 @@ for i=iIn:iIn+9
                 %}
                 %assignin('base','netTrace',netTrace);
                 a = fieldnames(ClusteringNetwork);
-                net = getfield(ClusteringNetwork,a{1});
+                'timing type'
+                timingTypeIn(c)
+                if timingTypeIn(c) ~= 3
+                    net = evalin('base','net;');
+                elseif timingTypeIn(c) == 3
+                    net = getfield(ClusteringNetwork,a{1});
+                end
                 a = fieldnames(DiscriminationVector);
                 exact = getfield(DiscriminationVector,a{1});
                 
@@ -301,24 +330,37 @@ for i=iIn:iIn+9
                 activeNeuron = find(out == 1)
                 neuron
                 
+                assignin('base','activeNeuron',activeNeuron);
+                
+                if timingTypeIn(c) ~= 3
                 'ELET PARAMETERS'
                 ELETParam
-                ELETMatrix(activeNeuron,1:2)
+                %best = evalin('base','best;');
+                ELETMatrix(activeNeuron,1:2) = ELETParam;%best(1:2,activeNeuron);
+                %best(1:2,activeNeuron);
                 
-                'FWHM'
-                ELETMatrix(activeNeuron,4)
+                %if exact(activeNeuron) == 0
+                    %ELETMatrix(activeNeuron,1:2) = [7 9];
+                    
+                %end
                 
-                'exact'
-                %exact(neuron)
+                'FWHM';
+                %ELETMatrix(activeNeuron,4)
+                end
+                
+                %'exact'
+                %exact(activeNeuron)
+                
+                %ELETMatrix(activeNeuron,1:2) = best(activeNeuron,1:2);
                 
                 if  ggc == 1 && (isempty(activeNeuron) || ...
-                        activeNeuron ~= neuron)
-                    activeNeuron = 0;
+                        isempty(neuron) || activeNeuron ~= neuron)
+                    %activeNeuron = 0;
                     
                 elseif ggc == 1 && isempty(activeNeuron) == 0 && ...
                         activeNeuron == neuron
-                    ELETMatrix(activeNeuron,1:2) = ELETParam;
-                    ELETMatrix(activeNeuron,3) = 0;
+                    %ELETMatrix(activeNeuron,1:2) = ELETParam;
+                    %ELETMatrix(activeNeuron,3) = 0;
                     'EQUAL'
                     
                 end
@@ -343,11 +385,29 @@ for i=iIn:iIn+9
             end
             %catch
             %    end
+            
+            %---------------------------------------------------------------------------------------
+            % HPGe pulse analysis (trapezoidal).
+            %---------------------------------------------------------------------------------------
+            
+            if (TypeIn(c) == 3 || TypeIn(c) == 2) && shapingTypeIn(c) ~= 8
+                [TPA,~,noGoodS(c,s)] = trapezoidalFilter(pulse{c}(s),oldPulse,shapingTypeIn(c),TFRFIn(c),TFTopIn(c),0);
+                
+                VoutMax{c}(s) = TPA;
+                
+                if noGoodS(c,s) == false
+                    goodCounter = goodCounter + 1;
+                    %baselineAverage = baselineAverage + baseline;
+                    
+                end
+                
+            end
+            
             %---------------------------------------------------------------------------------------
             % PAES analysis.
             %---------------------------------------------------------------------------------------
             
-            if analysisTypeIn ~= 3 && timingTypeIn(c) ~= 3 && (c == coinCh(1) || c == coinCh(2))
+            if timingTypeIn(c) ~= 3 && (c == coinCh(1) || c == coinCh(2))
                 
                 %{
                 try
@@ -359,14 +419,22 @@ for i=iIn:iIn+9
                 end
                 %}
                 % Trapezoidal shaping for timing.
+                %plot(pulse{c}(s).y)
                 
-                if TypeIn(c) == 3 && analysisTypeIn ~= 3 && timingTypeIn(c) == 2
-                    [~,vOut] = trapezoidalFilter(pulse{c}(s),1,TFTopInFast,TFRFInFast);
-                    pulse{c}(s).y = vOut;
+                if TypeIn(c) == 3 && timingTypeIn(c) == 2
+                    [~,vOut] = trapezoidalFilter(pulse{c}(s),oldPulse,1,2E-6,0.1E-6,1);
+                    %plot(pulse{c}(s).y);
+                    try
+                        plot(vOut(15000:20000,:));
+                        pulse{c}(s).y = vOut(:,2);
+                    catch
+                        pulse{c}(s).y = [];
+                        'no pulse'
+                    end
                     
                 end
                 
-                [crossTimeOut,noGood(c,i),numPeaks,~] = paes(timingTypeIn(c),TypeIn(c),c,multiStopIn,...
+                [crossTimeOut,noGood(c,s),numPeaks,~] = paes_unedited(timingTypeIn(c),TypeIn(c),c,multiStopIn,...
                     multiStopConditionsIn,numPeaks,pulse{c}(s),RTFLIn,RTFUpIn,ELETMatrix, ...
                     DiscriminationVector,neuron,activeNeuron,ANN,ggc);
                 
@@ -462,60 +530,115 @@ for i=iIn:iIn+9
         if sum(TypeIn(:) == 1) ~= 0
             
             if multiStopIn == '1'
-                timeOfFlight{s} = NaN(1,numPeaks);
+                %numPeaks = 2
+                %{
+                if multiStopConditionsIn == 6 || multiStopConditionsIn == 2
+                    numPeaks = 2;
+                    
+                elseif multiStopConditionsIn == 7 || multiStopConditionsIn == 3
+                    numPeaks = 3;
+                    
+                elseif multiStopConditionsIn == 1
+                    numPeaks = 1;
+                    
+                end
+                %}
+                numPeaks = numel(crossTime{s}.mcp)
                 
+                timeOfFlight{s} = NaN(1,numPeaks);
+                'NO GOOD'
+                noGood(:,s)
+                noGoodS(:,s)
                 if sum(noGood(:,s)) == 0 && sum(noGoodS(:,s)) == 0
+                    
                     for p=1:numPeaks
+                        'ToF CALCULATION'
                         timeOfFlight{s}(p) = (crossTime{s}.mcp(p) - crossTime{s}.gamma(1));
                         
-                        if ANN == 1 && isempty(activeNeuron) == 0 && activeNeuron ~= 0
+                        'mcp'
+                        crossTime{s}.mcp(p)
+                        'gamma'
+                        crossTime{s}.gamma(1)
+                        
+                        if ANN == 0 || (ANN == 1 && isempty(activeNeuron) == 0 && activeNeuron ~= 0)
                             'SUBTRACTING MULTI'
-                            timeOfFlight{s}(p) = timeOfFlight(s) - ELETMatrix(activeNeuron,3);
+                            timeOfFlight{s}(p) = timeOfFlight{s}(p);% - best(3,activeNeuron);
                             
                         else
                             timeOfFlight(s) = NaN;
+                            'multi-stop neuron error'
                             
                         end
                         
                         if timeOfFlight{s}(p) < -250*10.^(-9)
                             timeOfFlight{s}(p) = NaN;
+                            'multi-stop out of range'
                             
                         end
                         
                     end
                     
+                    try
+                        if ~isnan(timeOfFlight{s})
+                            assignin('base','timeOfFlight',timeOfFlight{s});
+                            evalin('base','ToF = vertcat(ToF,timeOfFlight);');
+                            
+                        end
+                    catch
+                    end
+                    
                 else
                     timeOfFlight{s}(1) = NaN;
+                    'multi-stop no good';
                     
                 end
                 
             else
-                
+                noGood(:,s)
+                noGoodS(:,s)
                 if sum(noGood(:,s)) == 0 && sum(noGoodS(:,s)) == 0
-                    
+                    'prior calculation';
                     timeOfFlight(s) = (crossTime{s}.mcp(1) - crossTime{s}.gamma(1));
-                    %{
+                    
                     'mcp'
                     crossTime{s}.mcp(1)
                     'gamma'
                     crossTime{s}.gamma(1)
-                    %}
-                    if ANN == 0 || (ANN == 1 && isempty(activeNeuron) == 0 && activeNeuron ~= 0)
-                        'SUBTRACTING'
-                        timeOfFlight(s) = timeOfFlight(s)% - ELETMatrix(activeNeuron,3);
+                    
+                    %crossTime{s}.gamma(1)
+                    %
+                    if (ANN == 0 || (ANN == 1 && isempty(activeNeuron) == 0 && activeNeuron ~= 0))% && ...
+                            %VoutMax{2}(s) >= 6.4
+                        'SUBTRACTING';
+                        timeOfFlight(s) = timeOfFlight(s);% - best(3,activeNeuron); %ELETMatrix(activeNeuron,3);
+                        
+                        
+                        try
+                                assignin('base','activeNeuron',activeNeuron);
+                                assignin('base','timeOfFlight',timeOfFlight(s));
+                                evalin('base','index = find(allNeurons.neurons{activeNeuron}(:,numberRuns) == 0);');
+                                evalin('base','allNeurons.neurons{activeNeuron}(index(1),numberRuns) = timeOfFlight;');
+                                
+                        catch
+                            'vector full'
+                            
+                        end
                         
                     else
                         timeOfFlight(s) = NaN;
-                        
+                        'NOT SUBTRACTING'
                     end
                     
                 else
                     timeOfFlight(s) = NaN;
+                    'noGood'
                     
                 end
                 
                 if timeOfFlight(s) < -250*10.^(-9)
+                    timeOfFlight(s)
                     timeOfFlight(s) = NaN;
+                    'out of range'
                     
                 end
                 
@@ -544,17 +667,17 @@ for i=iIn:iIn+9
                 end
                 
             else
-                timeOfFlight(s) = 1;
+                timeOfFlight(s) = NaN;
                 
             end
             
             if timeOfFlight(s) < -250*10.^(-9)
-                timeOfFlight(s) = 1;
+                timeOfFlight(s) = NaN;
                 
             end
             
         else
-            timeOfFlight(s) = 1;
+            timeOfFlight(s) = NaN;
             
         end
        %{ 
@@ -567,10 +690,10 @@ for i=iIn:iIn+9
     %}
     %clearvars pulse;
     s = s + 1;
-    pause(0.001);
+    pause(0.0001);
     
 end
 
-baselineAverage = baselineAverage/goodCounter;
+%baselineAverage = baselineAverage/goodCounter;
 
 end

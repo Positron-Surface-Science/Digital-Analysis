@@ -6,12 +6,13 @@ p = 1;%round(q/(L*pulseIn.desc.fs))
 q = floor((1.25*p)/0.1);
 Fs = (p/q)*pulseIn.desc.fs;
 T = (1/Fs);%q/p)*pulseIn.desc.Ts
-
+TFRFIn
 divid = round(288E-9/T);%243E-9;
-gRound = round(TFTopIn/T);
+%gRound = round(TFTopIn/T);
 
-L = round(TFRFIn/T); %3*10^(-6)
-G = round(gRound/divid)*divid;
+L = round(TFRFIn/T) %3*10^(-6)
+%G = round(gRound/divid)*divid
+G = round(TFTopIn/T)
 
 amp = 0;
 
@@ -50,7 +51,7 @@ noGood = 0;
 ANN = 0;
 
 try
-    
+    %{
     measurePulse = smooth(pulseIn.y,101,'moving') - ...
         mean(pulseIn.y(round(offset/T-2E-6/T):round(offset/T-1E-6/T)));
     
@@ -70,7 +71,8 @@ try
         return;
         
     end
-
+    %}
+%{
     if ANN == 1
         ap = 0;
         newvIn = pulseIn.y(round(12E-6/T):round(24E-6/T));
@@ -87,7 +89,7 @@ try
         pulseIn.y = [zeros(1,round(12E-6/T)) newestvIn];
         
     end
-    
+    %}
     %[~,indexMax] = max(pulseIn.y);
     
     %pulseIn.y = pulseIn.y - mean(pulseIn.y(round(13E-6/T):round(14.5E-6/T)));
@@ -152,7 +154,7 @@ try
         %oldPulse = pulseIn.y;
         %baseline = mean(pulseIn.y(round((offset-999E-9)/T):round((offset-500E-9)/T)));
         %pulseIn.y = pulseIn.y - baseline;
-        assignin('base','pulseIn',pulseIn.y);
+        %assignin('base','pulseIn',pulseIn.y);
         unNew = pulseIn.y;
         pulseDeconv.y = pulseIn.y;
         difference = pulseDeconv.y;
@@ -256,8 +258,13 @@ try
         %plot(shapedPulse)
         %[~,in] = max(shapedPulse);
         
-        indexBegin = round(offset/T);%-round(100E-9/T);%round(15E-6/T)+round(G/2)% - round(1E-6/T);%index(2) + round(1000E-9/T);
-        indexEnd = round(offset/T) + round(G-1200E-9/T);%round((G - round(1E-6/T))/divid)*divid;%round(15E-6/T)+round(G/2 + 10E-9/T)%index(3) - round(100E-9/T);
+        %best = evalin('base','best;');
+        %activeNeuron = evalin('base','activeNeuron');
+        %L = round((best(1,activeNeuron)*1E-6)/T);
+        %G = round((best(2,activeNeuron)*1E-6)/T);
+        
+        indexBegin = round(offset/T) + round(L)%-round(100E-9/T);%round(15E-6/T)+round(G/2)% - round(1E-6/T);%index(2) + round(1000E-9/T);
+        indexEnd = round(offset/T) + round(G-1200E-9/T)%round((G - round(1E-6/T))/divid)*divid;%round(15E-6/T)+round(G/2 + 10E-9/T)%index(3) - round(100E-9/T);
         
         %BLIndexStart = index(1) - round(500E-9/T);
         %BLIndexEnd = index(4) + round(500E-9/T);
@@ -373,10 +380,28 @@ try
         y = A1*exp(-x/t1) + A2*exp(-x/t2) + A3*exp(-x/t3) + y0 - 0.001;
          %}
         amp = mean(shapedPulse(indexBegin:indexEnd));
-        
+        %if amp >= 6.3
+            %amp = amp - (best(3,activeNeuron) - 6.5);
+            
+        %end
+        %{
+        try
+            %if amp >= 6 && amp <= 7.3
+            
+                assignin('base','amp',amp);
+                evalin('base','index = find(allNeurons.mwdNeurons{activeNeuron}(:,numberRuns) == 0);');
+                evalin('base','allNeurons.mwdNeurons{activeNeuron}(index(1),numberRuns) = amp;');
+                
+            %end
+            
+        catch
+            'vector full'
+            
+        end
+        %}
         %amp = amp - 0.5*amp*baseline^2;
-        assignin('base','pulseInx',pulseIn.x);
-        assignin('base','pulseIn',pulseIn.y);
+        %assignin('base','pulseInx',pulseIn.x);
+        %assignin('base','pulseIn',pulseIn.y);
         %assignin('base','pulseDeconv',pulseDeconv.y);
         %assignin('base','shapedPulse',shapedPulse);
         %amp = amp + (baseline*100)^2
