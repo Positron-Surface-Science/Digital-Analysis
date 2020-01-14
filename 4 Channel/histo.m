@@ -201,12 +201,12 @@ elseif GGCoinOn == false && eeCoinOn == true
         binSize = (timingWindow - ToFInitialTime)/numBins(ToFChannel);
         
         for s=1:numberOfSamples
-            whichBinGe(s) = floor(VoutMax2(s)/bin3Size);
+            whichBinGe(s) = ceil(VoutMax2(s)/bin3Size);
             
             if multiStopConditionsIn == 6 && numel(timeOfFlight{s}) == 2
                 'ASDFLASGKAFGKDFGASGASFG'
-                whichBinTimeOfFlight{s}(1) = floor((timeOfFlight{s}(1)+250*10.^(-9))/binSize);
-                whichBinTimeOfFlight{s}(2) = floor((timeOfFlight{s}(2)+250*10.^(-9))/binSize);
+                whichBinTimeOfFlight{s}(1) = ceil((timeOfFlight{s}(1)+250*10.^(-9))/binSize);
+                whichBinTimeOfFlight{s}(2) = ceil((timeOfFlight{s}(2)+250*10.^(-9))/binSize);
                 
                 if whichBinGe(s) > 0 && whichBinTimeOfFlight{s}(1) > 0 && ...
                         whichBinTimeOfFlight{s}(1) <= numBins(ToFChannel) && ...
@@ -235,8 +235,8 @@ elseif GGCoinOn == false && eeCoinOn == true
         
         for s=1:numberOfSamples
             
-            whichBinToF(1,s) = floor(timeOfFlight{1}(s)/binsSize);
-            whichBinToF(2,s) = floor(timeOfFlight{2}(s)/binsSize);
+            whichBinToF(1,s) = ceil(timeOfFlight{1}(s)/binsSize);
+            whichBinToF(2,s) = ceil(timeOfFlight{2}(s)/binsSize);
             
             if whichBinToF(1,s) > 0 && whichBinToF(1,s) <= numBins(ToFChannel) && ...
                     whichBinToF(2,s) > 0 && whichBinToF(2,s) <= numBins(ToFChannel)

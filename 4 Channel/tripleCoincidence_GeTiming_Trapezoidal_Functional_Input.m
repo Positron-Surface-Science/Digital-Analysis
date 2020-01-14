@@ -34,7 +34,7 @@ end
 if isempty(ggc)
     ggc = 0;
 end
-ggc = 0;
+ggc = 1;
 timingTypeChanged = false;
 numPeaks = 0;
 
@@ -319,7 +319,7 @@ for n=iIn:iIn+9
                 if timingTypeIn(c) ~= 3
                     net = evalin('base','net;');
                 elseif timingTypeIn(c) == 3
-                    net = getfield(ClusteringNetwork,a{1});
+                    net = evalin('base','net;');%getfield(ClusteringNetwork,a{1});
                 end
                 a = fieldnames(DiscriminationVector);
                 exact = getfield(DiscriminationVector,a{1});
@@ -335,11 +335,11 @@ for n=iIn:iIn+9
                 if timingTypeIn(c) ~= 3
                 'ELET PARAMETERS'
                 ELETParam
-                %best = evalin('base','best;');
+                %best = evalin('base','best6;');
                 ELETMatrix(activeNeuron,1:2) = ELETParam;%best(1:2,activeNeuron);
                 %best(1:2,activeNeuron);
                 
-                %if exact(activeNeuron) == 0
+                %if best(1,activeNeuron) == 0
                     %ELETMatrix(activeNeuron,1:2) = [7 9];
                     
                 %end
@@ -608,7 +608,8 @@ for n=iIn:iIn+9
                     %crossTime{s}.gamma(1)
                     %
                     if (ANN == 0 || (ANN == 1 && isempty(activeNeuron) == 0 && activeNeuron ~= 0))% && ...
-                            %VoutMax{2}(s) >= 6.4
+                            %best(4,activeNeuron) <= 1E-9%VoutMax{2}(s) >= 6.2 && VoutMax{2}(s) <= 7.0
+                            
                         'SUBTRACTING';
                         timeOfFlight(s) = timeOfFlight(s);% - best(3,activeNeuron); %ELETMatrix(activeNeuron,3);
                         
@@ -623,6 +624,7 @@ for n=iIn:iIn+9
                             'vector full'
                             
                         end
+                        
                         
                     else
                         timeOfFlight(s) = NaN;

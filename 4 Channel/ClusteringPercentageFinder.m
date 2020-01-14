@@ -10,16 +10,16 @@ x = linspace(1,438,438);
 range1 = 160;
 range2 = 180;
 
-%netMatrix = net(nT(:,1:75000));
+%netMatrix = net(tN(:,1:75000));
 nt = [];
 
-for j=51:400
+for j=61:400
     
     nt=[];
     
     %if exact(j) == 1
         
-        nt = nT(:,netMatrix(j,:) == 1);
+        nt = tN(:,netMatrix(j,:) == 1);
         
         if ~isempty(nt)
         plot(ax1,x,nt)

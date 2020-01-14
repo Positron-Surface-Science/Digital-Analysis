@@ -4,14 +4,14 @@ xToF = linspace(-0.25E-6,0.25E-6,1024)';
     observe = [];
     fwhm = [];
     index = [];
-    best = [];
+    best2 = [];
     
 
 for n=1:400
     
     %if exact(n) == 1
         
-        for i=1:65
+        for i=1:260
             
             if allNeurons.eletParameters(1,i) ~= 0
                 
@@ -76,16 +76,16 @@ for n=1:400
             smallestIndex = index(minFwhmIndex);
             
             if a ~= 0
-                best(:,n) = vertcat(allNeurons.eletParameters(:,smallestIndex),x0(smallestIndex,n),fwhm(smallestIndex,n));
+                best2(:,n) = vertcat(allNeurons.eletParameters(:,smallestIndex),x0(smallestIndex,n),fwhm(smallestIndex,n));
                 'sdgsdaf'
                 
             else
-                best(:,n) = [0 0 0 0];
+                best2(:,n) = [0 0 0 0];
                 
             end
             
         catch
-            best(:,n) = [0 0 0 0];
+            best2(:,n) = [0 0 0 0];
             
         end
         
