@@ -1,9 +1,9 @@
 
-summer = zeros(1024,1);
-for Ge = 172:246
-    for ToF = 1:1024
+summer = zeros(2048,1);
+for Ge = 563:667
+    for ToF = 1:2048
         %for Ge = 2633:3000
-            summer(ToF) = summer(ToF) + electronVsElectron(Ge,ToF);
+            summer(ToF) = summer(ToF) + gammaVsToF(Ge,ToF);
         %end
     end
 end

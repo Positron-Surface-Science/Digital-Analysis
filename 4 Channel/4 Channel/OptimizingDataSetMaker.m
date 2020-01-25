@@ -1,28 +1,30 @@
-x = linspace(1,438,438);
+x = linspace(1,438,438)';
 nt = [];
 targets = [];
-%netMatrix = net(tN(:,1:75000));
+%netMatrix = net(tN(:,1:27000));
+no = 169
 
-for j=1:225
+for j=no:no
     
-    if exact(j) == 1
+   % if exact(j) == 1
         
-        ntTest = horzcat(nt,tN(:,netMatrix(j,:) == 1));
+        nt = horzcat(nt,tN(:,netMatrix(j,:) == 1));
         
-        tstest = zeros(2,numel(tN(1,netMatrix(j,:) == 1))) + ELETMatrix(j,1:2)';
+        %tstest = zeros(2,numel(tN(1,netMatrix(j,:) == 1))) + ELETMatrix(j,1:2)';
         
-        out = net2(ntTest);
+        out = net(ntTest);
         
-        best = mean(out,2);
+        %best = mean(out,2);
         
-        ELETMatrixBase(j,:) = best';
+        %ELETMatrixBase(j,:) = best';
         
         %targets = horzcat(targets,ts);
         
-        %{
+        
         plot(ax1,x,nt)
         xticks(ax1,0:10:400);
         grid(ax1,'on')
+       %{
         beep
         j
         yesno = input('Good Traces? (y/n): ','s');
@@ -68,5 +70,5 @@ for j=1:225
             
         end
         %}
-    end
+    %end
 end

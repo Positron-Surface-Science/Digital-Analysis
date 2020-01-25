@@ -1,8 +1,8 @@
-function [trapezoidalPlateauAverage,vOut,noGood] = trapezoidalFilter(vIn,oldPulse,shapingTypeIn,TFRFIn,TFTopIn)
+function [trapezoidalPlateauAverage,vOut,noGood] = trapezoidalFilter(vIn,oldPulse,shapingTypeIn,TFRFIn,TFTopIn,tTiming)
 format long
 digits(15)
 
-%try
+try
 % --------------------------------------------------------------------------
 % Trapezoidal filter for germanium pulses.
 % If resolution gets worse, go back to a minimum value of peakDistance and
@@ -19,6 +19,7 @@ Ts = 1/Fs;
 noGood = 0;
 
 divid = 250E-9;
+
 gRound = floor(TFTopIn/(divid));
 
 L = round(TFRFIn/Ts); %3*10^(-6)
@@ -29,7 +30,7 @@ G = round(gRound*divid/Ts);
 [VMax,~] = max(vIn.y(50:numel(vIn.y)-50));
 [VMin,~] = min(vIn.y(50:numel(vIn.y)-50));
 
-if abs(VMax) > abs(VMin)
+if abs(VMax) > abs(VMin) && tTiming == 0
     vIn.y = resample(vIn.y,p,q);
     oldPulse = resample(oldPulse,p,q);
     %vIn.y = resample(vIn.y,p,q);
@@ -53,15 +54,16 @@ tau = (58000/(Ts/(10.^(-9))));%29250; % Decay constant of HPGe preamplifier. 580
 %tau
 % Requiring a minimum and maximum voltage to reduce noise and
 % over-pulses
-try
-    T = V > VLower && V < VUpper;
-catch
-    trapezoidalPlateauAverage = 0;
-    vOut = [];
-    noGood = 1;
+%try
+    T = 1;%V > VLower && V < VUpper;
+%catch
+    %trapezoidalPlateauAverage = 0;
+    %vOut = [];
+    %noGood = 1;
     
-end
-
+%end
+'T'
+T
 if T == 1
     
     % -------------------------------------------------------------------
@@ -357,6 +359,8 @@ if T == 1
         %assignin('base','vInPrint',vInPrint);
         %assignin('base','vOutPrint',vOutPrint);
         
+        %{
+        
         vOutDiff1 = diff(vOut);
         vOutDiff1Smooth = smooth(vOutDiff1,501,'lowess');
         vOutDiff2 = diff(vOutDiff1Smooth);
@@ -367,16 +371,17 @@ if T == 1
         
         [~,newsIndex] = findpeaks(abs(vOutDiff2(1:numel(vOutDiff2)-1000)), ...
             'MinPeakHeight',halfTrapezoidalMax);
-        
+        %}
         try
             baseline = (mean(vOut(newsIndex(1)-500:newsIndex(1)-100)) + mean(vOut(newsIndex(4)+100:newsIndex(4)+500)))/2;
             trapezoidalPlateauAverage = mean(vOut(newsIndex(3):newsIndex(3)));
             vOut = horzcat(vInPrint,vOutPrint);
         catch
             trapezoidalPlateauAverage = 0;
-            vOut = [];
+            vOut = horzcat(vInPrint,vOutPrint);
         end
         
+        %plot(vOut)
     %{
     %figure;
     %plot(abs(vOutDiff2(1:numel(vOutDiff2)-1000)));
@@ -844,7 +849,7 @@ vOut = conv(vIn.y(50:numel(vIn.y)-50),squarePulse);
         trapezoidalPlateauAverage = ml*100;% - mean(newvIn(100:275))*100;
         vOut = [newvIn newestvIn'];
         
-        plot(vOut)
+        %plot(vOut)
         
         
         %{
@@ -1521,13 +1526,13 @@ else
     vOut = [];
     
 end
-%{
+
 catch
     trapezoidalPlateauAverage = 0;
     vOut = [];
     noGood = 1;
-    'trapezoidal filter'
+    'trapezoidal filter error'
     
 end
-%}
+
 end

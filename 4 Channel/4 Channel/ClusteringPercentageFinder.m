@@ -11,19 +11,21 @@ range1 = 160;
 range2 = 180;
 
 %netMatrix = net(tN(:,1:75000));
+nt = [];
 
-for j=1:50
+for j=61:400
     
     nt=[];
     
-    if exact(j) == 1
+    %if exact(j) == 1
         
         nt = tN(:,netMatrix(j,:) == 1);
         
+        if ~isempty(nt)
         plot(ax1,x,nt)
         xticks(ax1,0:10:400);
         grid(ax1,'on')
-        beep
+        %beep
         j
         yesno = input('Good Traces? (y/n): ','s');
         
@@ -31,6 +33,9 @@ for j=1:50
             exact(j) = 0;
             
         end
+        
+        end
+        
         %{
         if yesno == 'y'
         
@@ -67,5 +72,5 @@ for j=1:50
             
         end
         %}
-    end
+    %end
 end
