@@ -1,0 +1,142 @@
+function [stableGe,control] = stable(peakStart,folderNumber,geOutMax,controlIn,numBins,gammaWindow)
+
+% --------------------------------------------------------------------------
+% Spectrum stabilizer for germanium pulses.
+% --------------------------------------------------------------------------
+
+%peakStart = (peakStart/numBins)*2048;
+controlIn
+folderNumber
+
+peakStart = round(peakStart*(2048/numBins))
+numBins = 2048;
+dN = gammaWindow/numBins;
+dR = round(0.5/dN)
+
+% Calculating control spectrum from first 10,000 (or stableLength) samples.
+if (isempty(controlIn) || controlIn == 0) && folderNumber == 1
+    geOutMax2 = geOutMax;
+    binsControl = linspace(0,numBins,numBins)';
+    %stableControl = ksdensity(geOutMax2,binsControl,'Bandwidth',gammaWindow/numBins);
+    [~,stableControl,~,~] = kde(geOutMax2,numBins,0,gammaWindow);
+    
+    %figure
+    %plot(stableControl);
+    assignin('base','stableControl',stableControl);
+    % Controlling input to remove "peaks" at beginning and end.
+    
+    [~,histMaxIndex] = max(stableControl(peakStart:numBins-10));
+    
+    histMaxIndex = histMaxIndex + peakStart
+    
+    fitobject = fit(binsControl(histMaxIndex-dR:histMaxIndex+dR), ...
+        stableControl(histMaxIndex-dR:histMaxIndex+dR),'gauss1');
+    
+    plot(fitobject,binsControl(histMaxIndex-dR:histMaxIndex+dR), ...
+        stableControl(histMaxIndex-dR:histMaxIndex+dR));
+    
+    cvalues = coeffvalues(fitobject);
+    
+    histMaxIndex = cvalues(2) + histMaxIndex - dR;
+    
+    %{
+    findpeaks(stableControl(peakStart:numBins-10),...
+        'MinPeakDistance',numBins,'MinPeakHeight', ... 
+        max(stableControl(peakStart:numBins-10))/1.1); % max(stableControl(peakStart:numBins-10));
+    %}
+    
+    %if numel(histMaxIndex) > 1
+    %    [~,maxIndex2] = max(histMax);
+    %    histMaxIndex = histMaxIndex(maxIndex2) + peakStart;
+    %else
+        %histMaxIndex = histMaxIndex + peakStart;
+    %end
+    
+    %{
+    % Fitting histogram spectrum to a Gaussian and finding the centroid.
+    controlFit = fit(binsControl(histMaxIndex-500:histMaxIndex+520), 
+        stableControl(histMaxIndex-500:histMaxIndex+520),'gauss1');
+    
+    centroidValue = controlFit.b1 + binsControl(histMaxIndex-500)
+    control = centroidValue;
+    %}
+    
+    control = histMaxIndex; %binsControl(histMaxIndex);
+    stableGe = geOutMax;
+    %msgbox(num2str(control));
+    
+else
+    % Spectrum stabilizer for counts greater than 10,000.
+    geOutMax2 = geOutMax;
+    bins = linspace(0,numBins,numBins)';
+    %stableHistogram = ksdensity(geOutMax2,bins,'Bandwidth',gammaWindow/numBins);
+    [~,stableHistogram,~,~] = kde(geOutMax2,numBins,0,gammaWindow);
+    
+    assignin('base','stableHistogram',stableHistogram);
+    
+    % Controlling input to remove "peaks" at beginning and end.
+    %plot(stableHistogram)
+    [histMax,histMaxIndex] = max(stableHistogram(peakStart:numBins-10));
+    
+    histMaxIndex = histMaxIndex + peakStart;
+    
+    fitobject = fit(bins(histMaxIndex-dR:histMaxIndex+dR), ...
+        stableHistogram(histMaxIndex-dR:histMaxIndex+dR),'gauss1');
+    cvalues = coeffvalues(fitobject);
+    
+    plot(fitobject,bins(histMaxIndex-dR:histMaxIndex+dR), ...
+        stableHistogram(histMaxIndex-dR:histMaxIndex+dR));
+    
+    histMaxIndex = cvalues(2) + histMaxIndex - dR
+    %plot(bins(histMaxIndex-dR:histMaxIndex+dR), ...
+    %    stableHistogram(histMaxIndex-dR:histMaxIndex+dR))
+    %{
+    findpeaks(stableHistogram(peakStart:numBins-10),...
+        'MinPeakDistance',numBins,'MinPeakHeight', ... 
+        max(stableHistogram(peakStart:numBins-10))/1.1); % max(stableHistogram(peakStart:numBins-10));
+    %}
+    
+    %figure
+    %plot(stableHistogram);
+    %assignin('base','stableHistogram',stableHistogram);
+    
+    %if numel(histMaxIndex) > 1
+    %    [~,maxIndex3] = max(histMax);
+    %    histMaxIndex = histMaxIndex(maxIndex3) + peakStart;
+    %else
+        %histMaxIndex = histMaxIndex + peakStart;
+    %end
+    
+    %{
+    % Fitting histogram spectrum to a Gaussian and finding the centroid.
+    stableFit = fit(bins(histMaxIndex-500:histMaxIndex+520), 
+        stableHistogram(histMaxIndex-500:histMaxIndex+520),'gauss1');
+    centroidValue = stableFit.b1 + bins(histMaxIndex-500);
+    %}
+    
+    'New Stabilizer'
+    centroidValue = histMaxIndex %bins(histMaxIndex);
+    %msgbox(num2str(centroidValue));
+    % Modifying "gain" by multiplying by the ratio of the channel number of
+    % the control to the channel number of the next 10,000.
+
+    %if centroidValue/controlIn < 7*(gammaWindow/numBins) && ...
+    %        controlIn/centroidValue < 7*(gammaWindow/numBins)
+        
+    if histMax >= 7 && abs((controlIn+centroidValue)/2 - centroidValue) < 2E-3
+        stableGe = geOutMax*((controlIn+centroidValue)/(2*centroidValue));
+        
+    else
+        stableGe = geOutMax;
+        'not enough counts'
+        
+    end
+    
+    %else
+    %    stableGe = geOutMax;
+    %end
+
+    control = controlIn
+    histMax
+    
+end
