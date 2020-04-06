@@ -6,11 +6,11 @@
 %
 %   p5s - input data.
 
-x = nT(:,1:75000);
+x = tracesTMultSingle(:,1:10000);
 
 % Create a Self-Organizing Map
-dimension1 = 20;
-dimension2 = 20;
+dimension1 = 32;
+dimension2 = 32;
 net = selforgmap([dimension1 dimension2],150,4,'hextop','linkdist');
 
 % Choose Plot Functions
@@ -19,6 +19,7 @@ net = selforgmap([dimension1 dimension2],150,4,'hextop','linkdist');
     %'plotsomplanes', 'plotsomhits', 'plotsompos'};
 
 net.trainParam.epochs = 2000;
+%net.inputWeights{1,1}.weightFcn = 'dotprod';
 
 % Train the Network
 [net,tr] = train(net,x);

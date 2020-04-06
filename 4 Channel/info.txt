@@ -1,0 +1,63 @@
+# of Events Analyzed: 
+
+Total # of Events in Dataset: 31395
+
+Channel Types 
+Ch. 1: Electron
+Ch. 2: Gamma (Pulse)
+Ch. 3: NC
+Ch. 4: NC
+
+Rejection Ratios 
+Ch. 1: 25.4902
+Ch. 2: 17.6471
+Ch. 3: 0
+Ch. 4: 0
+
+Band-Pass Filter: On
+Ch. 1 Lower: 0.0003
+Ch. 1 Upper: 50
+Ch. 2 Lower: 1e-05
+Ch. 2 Upper: 10
+Ch. 3 Lower: 1
+Ch. 3 Upper: 50
+Ch. 4 Lower: 1e-05
+Ch. 4 Upper: 1000
+
+Rise-Time Filter: Ch. 2
+Lower Cut-Off (ns): 0
+Upper Cut-Off (ns): 300
+
+Timing Window (micro s): 1
+
+Multi-Stop: Off
+
+Multi-Stop Conditions (If On): 
+
+Gamma Windows 
+Ch. 1: 12
+Ch. 2: 7.5
+Ch. 3: 10
+Ch. 4: 10
+
+Gamma Shaping Type: 
+Ch. 1: None
+Ch. 2: None
+Ch. 3: None
+Ch. 4: None
+
+Shaping Constants 
+Ch. 1 Top: 5
+Ch. 1 Rise/Fall: 0
+Ch. 2 Top: 4.75
+Ch. 2 Rise/Fall: 0
+Ch. 3 Top: 5
+Ch. 3 Rise/Fall: 0
+Ch. 4 Top: 5
+Ch. 4 Rise/Fall: 0
+
+Gamma Stabilizer 
+Ch. 1: Off
+Ch. 2: Off
+Ch. 3: Off
+Ch. 4: Off

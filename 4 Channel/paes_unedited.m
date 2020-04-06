@@ -1,4 +1,4 @@
-function [crossTime,noGood,numberOfPeaks,riseTime] = paes(timingIn,TypeIn,c,...
+function [crossTime,noGood,numberOfPeaks,riseTime] = paes_unedited(timingIn,TypeIn,c,...
     multiStopIn,multiStopConditionsIn,numPeaks,pulseIn,RTFLIn,RTFUpIn,ELETMatrix,...
     DiscriminationVector,neuron,activeNeuron,ANN,ggc)
 
@@ -6,7 +6,8 @@ function [crossTime,noGood,numberOfPeaks,riseTime] = paes(timingIn,TypeIn,c,...
 % 'PAES' function which calculates the crossing "pick-off" time of detector
 % pulses.
 % --------------------------------------------------------------------------
-
+%pulseIn.y = single(pulseIn.y);
+%pulseIn.x = single(pulseIn.x);
 pulseIny = pulseIn.y;
 pulseInx = pulseIn.x;
 dN = pulseIn.desc.Ts; % Time per channel
@@ -23,10 +24,11 @@ foundFrac2 = 1;
 goodRiseTime = false;
 findingNoise = false;
 neuronTemp = neuron;
-a = fieldnames(DiscriminationVector);
-exact = getfield(DiscriminationVector,a{1});
+%ELETMatrix = ELETMatrix';
+%a = fieldnames(DiscriminationVector);
+%exact = getfield(DiscriminationVector,a{1});
 % ----------------------------------
-exact(exact == 0) = 1;
+%exact(exact == 0) = 1;
 % ----------------------------------
 
 if TypeIn == 1 && ggc == 0
@@ -107,7 +109,7 @@ elseif TypeIn == 1 && ggc == 1
     warnMsg = [];
     crossTime = NaN;
     numPeaks = 1;
-    
+    %plot(pulseIny)
     
 elseif TypeIn ~= 1
     'VMin';
@@ -216,16 +218,15 @@ for s=1:numberOfPeaks
         VMinFraction2 = (0.09*VMin{c}(s));
         
         if ggc == 1 && TypeIn == 1
-            VMinFraction1 = (0.10*VMin{c}(s));
-            VMinFraction2 = (0.20*VMin{c}(s));
+            VMinFraction1 = (0.20*VMin{c}(s));
+            VMinFraction2 = (0.30*VMin{c}(s));
             
         elseif TypeIn == 3 && ANN == 1
-            VMinFraction1 = (ELETMatrix(activeNeuron,1)*0.01*VMin{c}(s));
-            VMinFraction2 = (ELETMatrix(activeNeuron,2)*0.01*VMin{c}(s));
-            VMinFraction = (((ELETMatrix(activeNeuron,1)+ELETMatrix(activeNeuron,2)))/2)*0.01*VMin{c}(s);
-            'ELET MATRIX 1'
-            ELETMatrix(activeNeuron,1);
-            ELETMatrix(activeNeuron,2);
+            assignin('base','ELETMatrix',ELETMatrix);
+            
+            VMinFraction1 = (ELETMatrix(1)*0.01*VMin{c}(s));
+            VMinFraction2 = (ELETMatrix(2)*0.01*VMin{c}(s));
+            
             %VMinFraction1 = (0.07*VMin{c}(s));
             %VMinFraction2 = (0.09*VMin{c}(s));
             
@@ -815,6 +816,7 @@ for s=1:numberOfPeaks
         
     end
     %}
+    %crossTime(s) = crossTime(s)/1E9;
 end
 
 % Breaking from the loop if there are more or fewer electrons detected

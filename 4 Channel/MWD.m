@@ -14,6 +14,21 @@ L = round(TFRFIn/T) %3*10^(-6)
 %G = round(gRound/divid)*divid
 G = round(TFTopIn/T)
 
+%{
+best = evalin('base','best;');
+activeNeuron = evalin('base','activeNeuron');
+LT = L
+GT = G
+L = round((best(1,activeNeuron)*1E-6)/T)
+G = round((best(2,activeNeuron)*1E-6)/T)
+%}
+
+if L == 0 && G == 0
+    L = LT;
+    G = GT;
+    
+end
+
 amp = 0;
 
 %{
@@ -51,7 +66,7 @@ noGood = 0;
 ANN = 0;
 
 try
-    %{
+    
     measurePulse = smooth(pulseIn.y,101,'moving') - ...
         mean(pulseIn.y(round(offset/T-2E-6/T):round(offset/T-1E-6/T)));
     
@@ -71,7 +86,7 @@ try
         return;
         
     end
-    %}
+    
 %{
     if ANN == 1
         ap = 0;
@@ -258,13 +273,11 @@ try
         %plot(shapedPulse)
         %[~,in] = max(shapedPulse);
         
-        %best = evalin('base','best;');
-        %activeNeuron = evalin('base','activeNeuron');
-        %L = round((best(1,activeNeuron)*1E-6)/T);
-        %G = round((best(2,activeNeuron)*1E-6)/T);
-        
         indexBegin = round(offset/T) + round(L)%-round(100E-9/T);%round(15E-6/T)+round(G/2)% - round(1E-6/T);%index(2) + round(1000E-9/T);
         indexEnd = round(offset/T) + round(G-1200E-9/T)%round((G - round(1E-6/T))/divid)*divid;%round(15E-6/T)+round(G/2 + 10E-9/T)%index(3) - round(100E-9/T);
+        
+        %iB = round(offset/T) + round(LT);
+        %iE = round(offset/T) + round(GT-1200E-9/T);
         
         %BLIndexStart = index(1) - round(500E-9/T);
         %BLIndexEnd = index(4) + round(500E-9/T);
@@ -379,20 +392,32 @@ try
         
         y = A1*exp(-x/t1) + A2*exp(-x/t2) + A3*exp(-x/t3) + y0 - 0.001;
          %}
-        amp = mean(shapedPulse(indexBegin:indexEnd));
-        %if amp >= 6.3
-            %amp = amp - (best(3,activeNeuron) - 6.5);
+        %indexBegin
+        
+        amp = mean(shapedPulse(indexBegin:indexEnd))
+        %{
+        amp2 = mean(shapedPulse(iB:iE))
+        
+        if amp2 >= 5.75 && amp >= 5.75 && amp2 ~= amp && best(2,activeNeuron) ~= 0
+            amp = amp;% - (best(3,activeNeuron) - 6.58);
             
-        %end
+        elseif amp2 <= 5.75
+            amp = 0;%amp - (6.6 - best(3,activeNeuron));%amp2;
+            
+        else
+            amp = 0;
+            
+        end
+        %}
         %{
         try
-            %if amp >= 6 && amp <= 7.3
+            if amp >= 6.2 && amp <= 7.3
             
                 assignin('base','amp',amp);
                 evalin('base','index = find(allNeurons.mwdNeurons{activeNeuron}(:,numberRuns) == 0);');
                 evalin('base','allNeurons.mwdNeurons{activeNeuron}(index(1),numberRuns) = amp;');
                 
-            %end
+            end
             
         catch
             'vector full'
@@ -494,7 +519,11 @@ try
             %plot(shapedPulse/100,'-p','MarkerIndices',[index(1) index(2) index(3) index(4)], ...
             %    'MarkerFaceColor','red','MarkerSize',15);
             
-            if amp >= 1.04736 && amp <= 1.08032
+            if amp >= 6.5
+                assignin('base','pA',oldPulse(round(10E-6/T):round(35E-6/T)));
+                evalin('base','pAs = horzcat(pAs,pA);');
+            %{
+            elseif amp >= 1.04736 && amp <= 1.08032
                 'AMP'
                 amp
                 %figure
@@ -532,7 +561,7 @@ try
                 amp
                 assignin('base','p5',oldPulse(round(10E-6/T):round(35E-6/T)));
                 evalin('base','p5s =  horzcat(p5s,p5);');
-                
+                %}
             end
             %}
             %{

@@ -4,14 +4,14 @@ xToF = linspace(-0.25E-6,0.25E-6,1024)';
     observe = [];
     fwhm = [];
     index = [];
-    best2 = [];
+    %best2 = [];
     
 
-for n=1:400
+for n=1:1024
     
     %if exact(n) == 1
         
-        for i=1:260
+        for i=1:1
             
             if allNeurons.eletParameters(1,i) ~= 0
                 
@@ -22,13 +22,13 @@ for n=1:400
                 
                 observe(i,n) = numel(allNeurons.neurons{n}(isnan(allNeurons.neurons{n}(:,i)) == 0,i));
                 
-                if max(hToF) < sum(hToF) && observe(i,n) >= 0.5*max(observe(:,n))
+                if max(hToF) < sum(hToF)
                     
                     try
                         
                         [~,second] = max(hToF);
                         
-                        gaussFit = fit(xToF(second-125:second+125),hToF(second-125:second+125),'gauss1');
+                        gaussFit = fit(xToF(second-200:second+200),hToF(second-200:second+200),'gauss1');
                         
                         cValues = coeffvalues(gaussFit);
                         
@@ -37,6 +37,10 @@ for n=1:400
                         amplitude(i,n) = cValues(1);
                         x0(i,n) = cValues(2);
                         
+                        if fwhm(i,n) == 0
+                            fwhm(i,n) = 1;
+                            
+                        end
                         
                         %{
                         nVector = allNeurons.neurons{n}(isnan(allNeurons.neurons{n}(:,i)) == 0 | ~any(allNeurons.neurons{n}(:,i)),i);
@@ -56,6 +60,7 @@ for n=1:400
                     catch
                         fwhm(i,n) = 1;
                         amplitude(i,n) = 0;
+                        'try error 1'
                         
                     end
                     
@@ -67,9 +72,9 @@ for n=1:400
         
         try
             
-            [a,b] = min(fwhm(observe(:,n) >= 0.5*max(observe(:,n)),n));
+            [a,b] = min(fwhm(observe(:,n) >= 0.25*max(observe(:,n)),n));
             
-            index = find(fwhm(:,n) <= 1.05*a & fwhm(:,n) > 0);
+            index = find(fwhm(:,n) <= 1.5*a & fwhm(:,n) > 0);
             
             [~,minFwhmIndex] = min(fwhm(index,n));
             
@@ -77,15 +82,16 @@ for n=1:400
             
             if a ~= 0
                 best2(:,n) = vertcat(allNeurons.eletParameters(:,smallestIndex),x0(smallestIndex,n),fwhm(smallestIndex,n));
-                'sdgsdaf'
                 
             else
                 best2(:,n) = [0 0 0 0];
+                'a == 0 error'
                 
             end
             
         catch
             best2(:,n) = [0 0 0 0];
+            'try error 2'
             
         end
         

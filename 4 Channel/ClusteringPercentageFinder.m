@@ -10,20 +10,20 @@ x = linspace(1,438,438);
 range1 = 160;
 range2 = 180;
 
-%netMatrix = net(tN(:,1:75000));
+%netMatrix = net(tracesTMultSingle(:,1:75000));
 nt = [];
 
-for j=61:400
+for j=1015:1015
     
     nt=[];
     
     %if exact(j) == 1
         
-        nt = tN(:,netMatrix(j,:) == 1);
+        nt = tracesTMultSingle(:,netMatrix(j,:) == 1);
         
         if ~isempty(nt)
         plot(ax1,x,nt)
-        xticks(ax1,0:10:400);
+        xticks(ax1,0:10:438);
         grid(ax1,'on')
         %beep
         j

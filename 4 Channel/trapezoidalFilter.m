@@ -2,7 +2,7 @@ function [trapezoidalPlateauAverage,vOut,noGood] = trapezoidalFilter(vIn,oldPuls
 format long
 digits(15)
 
-%try
+try
 % --------------------------------------------------------------------------
 % Trapezoidal filter for germanium pulses.
 % If resolution gets worse, go back to a minimum value of peakDistance and
@@ -27,8 +27,8 @@ G = round(gRound*divid/Ts);
 
 %vIn.y = smooth(vIn.y,Ts/vIn.desc.fs,'moving');
 
-[VMax,~] = max(vIn.y(50:numel(vIn.y)-50));
-[VMin,~] = min(vIn.y(50:numel(vIn.y)-50));
+[VMax,VMaxIndex] = max(vIn.y(50:numel(vIn.y)-50));
+[VMin,VMinIndex] = min(vIn.y(50:numel(vIn.y)-50));
 
 if abs(VMax) > abs(VMin) && tTiming == 0
     vIn.y = resample(vIn.y,p,q);
@@ -37,9 +37,18 @@ if abs(VMax) > abs(VMin) && tTiming == 0
     
 else
     VMax = VMin;
+    VMaxIndex = VMinIndex;
     
 end
 
+if abs(vIn.x(VMaxIndex)) >= 10E-6
+    trapezoidalPlateauAverage = 0;
+    vOut = [];
+    noGood = 1;
+    'Pulse not in coincidence'
+    return;
+    
+end
 
 offset = -vIn.info.OFFSET;
 offset = offset + 250E-9;
@@ -464,22 +473,33 @@ vOut = conv(vIn.y(50:numel(vIn.y)-50),squarePulse);
         baseline = mean(netInput(200:450));
         netInput = netInput - baseline;
         %netInput = netInput/max(netInput);
-        netInput = netInput(510:550);
+        netInput = netInput(400:1200);
         %netInput = netInput(1:50);
         
         %netInput = netInput(15:40);
         plot(netInput)
-        net = evalin('base','net');
+        net = evalin('base','net3');
         
-        out = net(netInput)
+        out = net(netInput);
         assignin('base','out',out);
         assignin('base','netInput',netInput);
-        
+        %}
         %truth = [1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 1 0 1 1 1 0 1 0];
         %truth = evalin('base','truth');
         %result = truth*out;
+        %{
+        out = smooth(out*100,50,'moving');
         
-        if sum(out(1:30)) == 1 %out(8) == 1 || out(13) == 1 || out(17) == 1 || out(22) == 1
+        trapezoidalPlateauAverage = max(out(1:500));
+        vOut = out;
+        noGood = 0;
+        
+        if trapezoidalPlateauAverage <= 1.1
+            trapezoidalPlateauAverage = 0;
+            
+        end
+        %}
+        %if sum(out(1:30)) == 1 %out(8) == 1 || out(13) == 1 || out(17) == 1 || out(22) == 1
         %plot(vIn.y)
         %}
         [trapezoidalPlateauAverage,vOut,noGood] = MWD(vIn,oldPulse,TFRFIn,TFTopIn);
@@ -1384,6 +1404,7 @@ vOut = conv(vIn.y(50:numel(vIn.y)-50),squarePulse);
         %}
         
     elseif shapingTypeIn == 10
+        %{
         try
             measurePulse = smooth(vIn.y,101,'moving') - ...
                 mean(vIn.y(round(offset/Ts-2E-6/Ts):round(offset/Ts-1E-6/Ts)));
@@ -1411,17 +1432,17 @@ vOut = conv(vIn.y(50:numel(vIn.y)-50),squarePulse);
             'rise time error'
             return;
         end
+        %}
+        %baseline = mean(vIn.y(round((offset-999E-9)*Fs):round((offset-500E-9)*Fs)));
         
-        baseline = mean(vIn.y(round((offset-999E-9)*Fs):round((offset-500E-9)*Fs)));
-        
-        v = vIn.y(round(10E-6/Ts)+240:round(30E-6/Ts)-1084) - baseline;
-        size(v)
+        %v = vIn.y(round(10E-6/Ts)+240:round(30E-6/Ts)-1084) - baseline;
+        %size(v)
         %v = v - mean(v(100:250));
-        assignin('base','vIns',vIn.y(round(10E-6/Ts):round(27E-6/Ts)-771));
-        assignin('base','vIns2',v);
-        assignin('base','vIns3',vIn.y(round(10E-6/Ts)+399:round(27E-6/Ts)-771));
-        aL = evalin('base','net(vIns2);');
-        assignin('base','aL',aL);
+        %assignin('base','vIns',vIn.y(round(10E-6/Ts):round(27E-6/Ts)-771));
+        %assignin('base','vIns2',v);
+        %assignin('base','vIns3',vIn.y(round(10E-6/Ts)+399:round(27E-6/Ts)-771));
+        %aL = evalin('base','net(vIns2);');
+        %assignin('base','aL',aL);
         %aP = evalin('base','net(vIns2);');
         %aS = evalin('base','net(vIns2);');
         %assignin('base','a',a);
@@ -1434,10 +1455,10 @@ vOut = conv(vIn.y(50:numel(vIn.y)-50),squarePulse);
         %aF = (aL + aP)./2;% + a2 + a3)./3;
         %plot([a2 a2]) 
         %if a >= 3.5
-        plot([v aL])
-        err = immse(aL,v)
+        %plot([v aL])
+        %err = immse(aL,v)
         
-        aF = aL; %smooth(aL,100,'moving');
+        %aF = aL; %smooth(aL,100,'moving');
         %aF = smooth(aF,175,'moving');
         %aF = smooth(aF,175,'moving');
         %aF2 = smoothdata(aP,'gaussian');
@@ -1449,17 +1470,28 @@ vOut = conv(vIn.y(50:numel(vIn.y)-50),squarePulse);
         %end
         %aF = smooth(aF,150,'moving');
         
-        if err <= 1E-6
-        trapezoidalPlateauAverage = max(aF)*100
+        %if err <= 1E-6
+        p = vIn.y(round(10E-6/Ts):round(35E-6/Ts));
+        p = p(350:2000);
+        net = evalin('base','net4');
+        pMean = evalin('base','ps1Mean');
+        pStd = evalin('base','ps1Std');
+        out = pStd*(predict(net, (p - pMean)/pStd, 'ExecutionEnvironment', 'gpu')) + pMean;
+        
+        plot([p out])
+        baseline = 0;%mean(out(1:50));
+        out = out - baseline;
+        trapezoidalPlateauAverage = (max(smooth(out,10,'moving')))*100
         %trapezoidalPlateauAverage = (max(aF(1:numel(aF)-10))*100 + max(aF2(1:numel(aF2)-10))*100 + ...
         %    max(aF3(1:numel(aF3)-10))*100)/3;% - mean(vIn.y(round(10E-6/Ts):round(10E-6/Ts)+400))*100;% - mean(a(100:400))*100;
-        amp = trapezoidalPlateauAverage;
-        vOut = aL;
+        vOut = out;
+        noGood = 0;
         
-        else
+        if trapezoidalPlateauAverage <= 0 && false
             trapezoidalPlateauAverage = 0;
-            vOut = v;
-            err
+            vOut = [];
+            noGood = 1;
+            %err
             
         end
         %plot([aF vIn.y(round(10E-6/Ts)+299:round(24E-6/Ts)-559)]);
@@ -1472,6 +1504,7 @@ vOut = conv(vIn.y(50:numel(vIn.y)-50),squarePulse);
         %   trapezoidalPlateauAverage = 0;
         %   vOut = [];
         %end
+        
         if false
         if amp >= 0.9297 && amp <= 0.9519
                 'AMP'
@@ -1526,13 +1559,13 @@ else
     vOut = [];
     
 end
-%{
+
 catch
     trapezoidalPlateauAverage = 0;
     vOut = [];
     noGood = 1;
-    'trapezoidal filter'
+    'trapezoidal filter error'
     
 end
-%}
+
 end

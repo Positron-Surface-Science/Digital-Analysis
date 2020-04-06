@@ -2,7 +2,7 @@ function [VoutMax,timeOfFlight,errorOccurred,noFilesFound,dataFilter,baselineAve
     tripleCoincidence_GeTiming_Trapezoidal_Functional_Input(selectPathIn,...
     iIn,analysisTypeIn,multiStopIn,multiStopConditionsIn,TypeIn,timingTypeIn,shapingTypeIn,...
     FFTIn,coinCh,ggc,RTFLIn,RTFUpIn,TFTopIn,TFRFIn,TFTopInFast,TFRFInFast,BPFSwitch,dataFilter,...
-    DiscriminationVector,ELETMatrix,ClusteringNetwork,neuron,ELETParam)
+    DiscriminationVector,ParameterMatrix,ClusteringNetwork,neuron,ELETParam)
 
 %---------------------------------------------------------------------------
 % Primary coincidence function. Reads the waveforms from the Lecroy
@@ -14,6 +14,7 @@ selectPath = selectPathIn;%'J:\Lecroy\Coi';%uigetdir;
 
 numChannels = 4;
 
+%digits(2)
 channelNumber = cell(numChannels);
 pulse = cell(1,4);
 crossTime = cell(1,2);
@@ -27,14 +28,15 @@ if isempty(neuron)
     neuron = 0;
 end
 neuron = 0;
-if isstruct(ELETMatrix)
-    a = fieldnames(ELETMatrix);
-    ELETMatrix = getfield(ELETMatrix,a{1});
+if isstruct(ParameterMatrix)
+    a = fieldnames(ParameterMatrix);
+    ParameterMatrix = getfield(ParameterMatrix,a{1});
 end
 if isempty(ggc)
     ggc = 0;
 end
-ggc = 1;
+
+exact2 = 1;
 timingTypeChanged = false;
 numPeaks = 0;
 
@@ -69,7 +71,7 @@ for n=iIn:iIn+9
                 'ANN ACTIVE FOR TIMING'
                 
             elseif TypeIn(c) == 3 && shapingTypeIn(c) == 0 && timingTypeIn(c) ~= 0
-                ANN = 1;
+                ANN = 0;
                 'ANN ACTIVE FOR SHAPING'
                 
             else
@@ -166,10 +168,12 @@ for n=iIn:iIn+9
                 
                 try
                     pulse{c}(s) = waveform.ReadLeCroyBinaryWaveform(fileName);
+                    %pulse{c}(s).y = single(pulse{c}(s).y);
+                    %pulse{c}(s).y
                     noFile = false;
                     
                 catch
-                    %errordlg('No Lecroy files within folder.','Incorrect Folder.');
+                    %errordlg('No .trc files within folder.','Incorrect Folder.');
                     noFile = true;
                     noFileCounter = noFileCounter + 1;
                     pause(1);
@@ -255,6 +259,21 @@ for n=iIn:iIn+9
             
             end
             %}
+            %{
+            if TypeIn(c) == 1 && ggc == 1
+                try
+                [m,i] = max(pulse{c}(s).y);
+                assignin('base','trace',pulse{c}(s).y(i-100:i+100));
+                mcpMatrix = evalin('base','net(trace);');
+                exact1 = evalin('base','exact');
+                'EXACT 2'
+                exact2 = exact1*mcpMatrix
+                catch
+                    exact2 = 0;
+                end
+            end
+            %}
+            
             
             %---------------------------------------------------------------------------------------
             % ANN Analysis.
@@ -267,17 +286,19 @@ for n=iIn:iIn+9
                 q = floor((1.25*p)/0.5);
                 FsN = (p/q)*Fs;
                 TsN = 1/FsN;
-                
+                %{
                 try
                     baseline = mean(oldPulse(round((offset-999E-9)/T):round((offset-500E-9)/T)));
                     oldPulse = oldPulse - baseline;
                 catch
                     'bpf error 2'
                 end
-                
+                %}
                 %if evalin('base','flags;') == 1
-                %assignin('base','trace',pulse{c}(s).y(18626:19063));
-                %evalin('base','traces = horzcat(traces,trace);');
+                %{
+                assignin('base','trace',pulse{c}(s).y(18626:19063));
+                evalin('base','traces = horzcat(traces,trace);');
+                %}
                 %end
                 %{
                 % ---------------------------------
@@ -294,12 +315,21 @@ for n=iIn:iIn+9
                 
                 % ---------------------------------
                 % HPGe 9x25 Network
-                netTrace = pulse{c}(s).y(18626:19063);
+                try
+                    netTrace =  pulse{c}(s).y(18626:19063);
+                    %oldPulse(18626:19063);%
+                    %netTrace = netTrace/max(netTrace);
+                    
+                catch
+                    netTrace = [];
+                    'no trace'
+                    
+                end
                 
-                netTrace = netTrace/max(netTrace);
                 %assignin('base','xTrace',pulse{c}(s).x(18626:19063));
                 % ---------------------------------
                 %assignin('base','p',pulse{c}(s).y(18626:19063)/max(pulse{c}(s).y(18626:19063)));
+                
                 %crossing(s) = evalin('base','net3(p);')
                 %{
                 % ---------------------------------
@@ -313,46 +343,160 @@ for n=iIn:iIn+9
                 % ---------------------------------
                 %}
                 %assignin('base','netTrace',netTrace);
-                a = fieldnames(ClusteringNetwork);
-                'timing type'
-                timingTypeIn(c)
-                if timingTypeIn(c) ~= 3
-                    net = evalin('base','net;');
-                elseif timingTypeIn(c) == 3
-                    net = evalin('base','net;');%getfield(ClusteringNetwork,a{1});
-                end
-                a = fieldnames(DiscriminationVector);
-                exact = getfield(DiscriminationVector,a{1});
-                
-                out = net(netTrace);
-                
+                %network(net);
+                %best = ParameterMatrix;
+                net = ClusteringNetwork;
+                %net = evalin('base','net');
+                %a = fieldnames(DiscriminationVector);
+                %exact = getfield(DiscriminationVector,a{1});
+                %mean(single(netTrace*1E4))
+                %assignin('base', 'paramTest', best);
+                out = net(single(netTrace*1E4));
+                %'elet2'
+                %net2 = evalin('base','net4;');
+                %p2 = pulse{c}(s).y(18626:19063)/max(pulse{c}(s).y(18626:19063));
+                %netTrace2 = p2*1E2;
+                %elet2 = predict(net2,netTrace2);
+                %'ELET 2'
+                %elet2(3) = -elet2(3)*1E-7;
+                %elet2
                 'Active Neuron'
                 activeNeuron = find(out == 1)
-                neuron
                 
-                assignin('base','activeNeuron',activeNeuron);
+                'timing type'
+                timingTypeIn(c)
                 
                 if timingTypeIn(c) ~= 3
-                'ELET PARAMETERS'
-                ELETParam
-                best = evalin('base','best6;');
-                ELETMatrix(activeNeuron,1:2) = ELETParam;%best(1:2,activeNeuron);
-                %best(1:2,activeNeuron);
+                    %net = evalin('base','net;');
+                    %{
+                    if ~ismember(activeNeuron, ...
+                            [633 634 635 636 637 638 ...
+                            664 665 666 667 668 669 670 671 672 ...
+                            698 702 703 704 ...
+                            733 734 735 736 ...
+                            765 766 767 768 ...
+                            799 800 ...
+                            830 831 832 ...
+                            1022 1023 1024 ...
+                            990 991 992 ...
+                            958 959 960 ...
+                            926 927 928 ...
+                            894 895 896 ...
+                            862 863 864])
+                    %}
+                            %{
+                            [1007 1008 1009 1010 1011 1012 1013 1014 1015 ...
+                            974 975 976 977 979 980 981 982 983 ...
+                            942 943 944 946 947 948 949 950 951 ...
+                            909 910 911 912 913 914 915 916 917 918 919 ...
+                            876 877 878 879 880 881 882 883 884 885 886 ...
+                            844 845 846 847 848 849 850 851 852 ...
+                            812 813 814 815 816 817 818 819 ...
+                            783 784 785 786])
+                            %}
+                            %{
+                            Upper Right
+                            [633 634 635 636 637 638 ...
+                            664 665 666 667 668 669 670 671 672 ...
+                            698 702 703 704 ...
+                            733 734 735 736 ...
+                            765 766 767 768 ...
+                            799 800 ...
+                            830 831 832 ...
+                            1022 1023 1024 ...
+                            990 991 992 ...
+                            958 959 960 ...
+                            926 927 928 ...
+                            894 895 896 ...
+                            862 863 864])
+                            %}
+                        
+                            %%% Lower Left
+                            %[3 4 5 6 7 8 ...
+                            %34 35 36 37 38 39 ...
+                            %65 66 67 68 69 70 71 ...
+                            %97 98 99 100 101])
+                            
+                            %activeNeuron = 0;
+                            
+                    %end
+                    %}
+                elseif timingTypeIn(c) == 3
+                    %net = evalin('base','net;');%getfield(ClusteringNetwork,a{1});
+                    %{
+                    'IS MEMBER?'
+                    
+                    if ~ismember(activeNeuron, ...
+                            [1007 1008 1009 1010 1011 1012 1013 1014 1015 ...
+                            974 975 976 977 979 980 981 982 983 ...
+                            942 943 944 946 947 948 949 950 951 ...
+                            909 910 911 912 913 914 915 916 917 918 919 ...
+                            876 877 878 879 880 881 882 883 884 885 886 ...
+                            844 845 846 847 848 849 850 851 852 ...
+                            812 813 814 815 816 817 818 819 ...
+                            783 784 785 786])
+                            %{
+                            Upper Right
+                            [633 634 635 636 637 638 ...
+                            664 665 666 667 668 669 670 671 672 ...
+                            698 702 703 704 ...
+                            733 734 735 736 ...
+                            765 766 767 768 ...
+                            799 800 ...
+                            830 831 832 ...
+                            1022 1023 1024 ...
+                            990 991 992 ...
+                            958 959 960 ...
+                            926 927 928 ...
+                            894 895 896 ...
+                            862 863 864])
+                            %}
+                        
+                            %%% Lower Left
+                            %[3 4 5 6 7 8 ...
+                            %34 35 36 37 38 39 ...
+                            %65 66 67 68 69 70 71 ...
+                            %97 98 99 100 101])
+                            
+                        activeNeuron = 0;
+                        
+                    end
+                    %}
+                end
                 
-                %if best(1,activeNeuron) == 0
+                %timing = evalin('base','net3(activeNeuron)');
+                assignin('base','activeNeuron',activeNeuron);
+                
+                if timingTypeIn(c) ~= 3 && activeNeuron ~= 0
+                    
+                    %best = evalin('base','best;');
+                    
+                    %'ELET PARAMETERS'
+                    %ELETParam = best(1:2,activeNeuron);
+                    
+                    ParameterMatrix(activeNeuron,1:2) = best(1:2,activeNeuron);
+                    %best(1:2,activeNeuron);
+                    
+                    %if best(1,activeNeuron) == 0
                     %ELETMatrix(activeNeuron,1:2) = [7 9];
                     
-                %end
-                
-                'FWHM';
-                %ELETMatrix(activeNeuron,4)
+                    %end
+                    
+                    'FWHM';
+                    %ELETMatrix(activeNeuron,4)
+                    
+                elseif timingTypeIn(c) ~= 3
+                    
+                    activeNeuron = 1;
+                    ELETMatrix(activeNeuron,1:2) = [0 0];
+                    
                 end
                 
                 %'exact'
                 %exact(activeNeuron)
                 
                 %ELETMatrix(activeNeuron,1:2) = best(activeNeuron,1:2);
-                
+                %{
                 if  ggc == 1 && (isempty(activeNeuron) || ...
                         isempty(neuron) || activeNeuron ~= neuron)
                     %activeNeuron = 0;
@@ -364,7 +508,7 @@ for n=iIn:iIn+9
                     'EQUAL'
                     
                 end
-                
+                %}
                 %{
                 if activeNeuron == neuron
                     plot(netTrace)
@@ -384,13 +528,16 @@ for n=iIn:iIn+9
                 
             end
             %catch
-            %    end
+                %activeNeuron = 0;
+                
+            %end
             
             %---------------------------------------------------------------------------------------
             % HPGe pulse analysis (trapezoidal).
             %---------------------------------------------------------------------------------------
             
-            if (TypeIn(c) == 3 || TypeIn(c) == 2) && shapingTypeIn(c) ~= 8
+            if (TypeIn(c) == 3 || TypeIn(c) == 2) && shapingTypeIn(c) ~= 8 && ...
+                    (ANN == 0 || (ANN == 1 && activeNeuron ~= 0))
                 [TPA,~,noGoodS(c,s)] = trapezoidalFilter(pulse{c}(s),oldPulse,shapingTypeIn(c),TFRFIn(c),TFTopIn(c),0);
                 
                 VoutMax{c}(s) = TPA;
@@ -400,6 +547,10 @@ for n=iIn:iIn+9
                     %baselineAverage = baselineAverage + baseline;
                     
                 end
+                
+            else
+                VoutMax{c}(s) = 0;
+                noGood(c,s) = 1;
                 
             end
             
@@ -435,7 +586,7 @@ for n=iIn:iIn+9
                 end
                 
                 [crossTimeOut,noGood(c,s),numPeaks,~] = paes_unedited(timingTypeIn(c),TypeIn(c),c,multiStopIn,...
-                    multiStopConditionsIn,numPeaks,pulse{c}(s),RTFLIn,RTFUpIn,ELETMatrix, ...
+                    multiStopConditionsIn,numPeaks,pulse{c}(s),RTFLIn,RTFUpIn,ParameterMatrix, ...
                     DiscriminationVector,neuron,activeNeuron,ANN,ggc);
                 
                 %try
@@ -520,13 +671,30 @@ for n=iIn:iIn+9
             
         end
         %}
+        %{
+        if TypeIn(c) == 1
+            
+            assignin('base','pulse_BaF2',pulse{c}(s).y(18626:19063)/max(pulse{c}(s).y(18626:19063)));
+            assignin('base','time_BaF2',crossTimeOut);
+            evalin('base','pulses_BaF2 = horzcat(pulses_BaF2, pulse_BaF2);');
+            evalin('base','times_BaF2 = horzcat(times_BaF2, time_BaF2);');
+            
+        elseif TypeIn(c) == 3
+            
+            assignin('base','pulse_HPGe',pulse{c}(s).y(18626:19063)/max(pulse{c}(s).y(18626:19063)));
+            assignin('base','neuron_HPGe',activeNeuron);
+            evalin('base','pulses_HPGe = horzcat(pulses_HPGe, pulse_HPGe);');
+            evalin('base','neurons_HPGe = horzcat(neurons_HPGe, neuron_HPGe);');
+            
+        end
+        %}
     end
     
     % Finding time difference between fractional value of MCP pulse and
     % x-crossover value of the gamma pulse.
     
     %try
-        
+    
         if sum(TypeIn(:) == 1) ~= 0
             
             if multiStopIn == '1'
@@ -555,9 +723,9 @@ for n=iIn:iIn+9
                         'ToF CALCULATION'
                         timeOfFlight{s}(p) = (crossTime{s}.mcp(p) - crossTime{s}.gamma(1));
                         
-                        'mcp'
+                        'mcp 1'
                         crossTime{s}.mcp(p)
-                        'gamma'
+                        'gamma 1'
                         crossTime{s}.gamma(1)
                         
                         if ANN == 0 || (ANN == 1 && isempty(activeNeuron) == 0 && activeNeuron ~= 0)
@@ -594,39 +762,43 @@ for n=iIn:iIn+9
                 end
                 
             else
+                try
                 noGood(:,s)
                 noGoodS(:,s)
-                if sum(noGood(:,s)) == 0 && sum(noGoodS(:,s)) == 0
+                if sum(noGood(:,s)) == 0 && sum(noGoodS(:,s)) == 0 && exact2 == 1
                     'prior calculation';
                     timeOfFlight(s) = (crossTime{s}.mcp(1) - crossTime{s}.gamma(1));
                     
-                    'mcp'
+                    'mcp 2'
                     crossTime{s}.mcp(1)
-                    'gamma'
+                    'gamma 2'
                     crossTime{s}.gamma(1)
-                    
                     %crossTime{s}.gamma(1)
                     %
-                    if (ANN == 0 || (ANN == 1 && isempty(activeNeuron) == 0 && activeNeuron ~= 0))% && ...
-                            %best(4,activeNeuron) <= 1E-9%VoutMax{2}(s) >= 6.2 && VoutMax{2}(s) <= 7.0
+                    if (ANN == 1 && isempty(activeNeuron) == 0 && activeNeuron ~= 0) && ...
+                            VoutMax{2}(s) >= 5.94 && VoutMax{2}(s) <= 7.23%6.713%best(4,activeNeuron) <= 10E-9 && VoutMax{2}(s) >= 6.2 && VoutMax{2}(s) <= 7.0 6.2
                             
                         'SUBTRACTING';
-                        timeOfFlight(s) = timeOfFlight(s);% - best(3,activeNeuron); %ELETMatrix(activeNeuron,3);
-                        
-                        
-                        try
+                        timeOfFlight(s) = timeOfFlight(s) - best(3,activeNeuron); %ELETMatrix(activeNeuron,3);
+                        %{
+                        assignin('base','netTrace',netTrace);
+                        evalin('base','input = horzcat(input,netTrace);');
+                        evalin('base','target = horzcat(target,best11(:,activeNeuron));');
+                        %}
+                        if ggc == 1 && 1==0
+                            try
                                 assignin('base','activeNeuron',activeNeuron);
                                 assignin('base','timeOfFlight',timeOfFlight(s));
                                 evalin('base','index = find(allNeurons.neurons{activeNeuron}(:,numberRuns) == 0);');
                                 evalin('base','allNeurons.neurons{activeNeuron}(index(1),numberRuns) = timeOfFlight;');
                                 
-                        catch
-                            'vector full'
-                            
+                            catch
+                                'vector full'
+                                
+                            end
                         end
-                        
-                        
-                    else
+                    
+                    elseif ANN == 1
                         timeOfFlight(s) = NaN;
                         'NOT SUBTRACTING'
                     end
@@ -643,7 +815,8 @@ for n=iIn:iIn+9
                     'out of range'
                     
                 end
-                
+                catch
+                end
             end
             
         elseif sum(TypeIn(:) == 3) == 1 && sum(timingTypeIn(:) ~= 3) == 1 && 1==0
@@ -691,6 +864,13 @@ for n=iIn:iIn+9
     end
     %}
     %clearvars pulse;
+    %{
+    if abs(timeOfFlight(s)) <= 3E-9
+        evalin('base','pulses = horzcat(pulses,p);');
+        evalin('base','elets = horzcat(elets, best3(1:3,activeNeuron));');
+        
+    end
+    %}
     s = s + 1;
     pause(0.0001);
     

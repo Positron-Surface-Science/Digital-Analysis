@@ -1,46 +1,44 @@
-xCh = linspace(1,7.5,4096)';
+xCh = linspace(0,7.5,4096)';
 
 
-    observe = [];
-    fwhm = [];
-    index = [];
+    %observe = [];
+    %fwhm = [];
+    %index = [];
     %best = [];
     
 
-for n=1:225
+for n=1:1024
     
     %if exact(n) == 1
         
-        for i=1:80
+        for i=1:37
             
             if allNeurons.mwdParameters(2,i) ~= 0
                 
                 allNeurons.mwdNeurons{n}(allNeurons.mwdNeurons{n}(:,i) == 0,i) = NaN;
                 
-                hCh = histcounts(allNeurons.mwdNeurons{n}(:,i),'NumBins',4096,'BinLimits',[1 7.5])';
+                hCh = histcounts(allNeurons.mwdNeurons{n}(:,i),'NumBins',4096,'BinLimits',[0 7.5])';
                 hCh = hCh/max(hCh);
                 
                 observe(i,n) = numel(allNeurons.mwdNeurons{n}(isnan(allNeurons.mwdNeurons{n}(:,i)) == 0,i));
                 
-                if max(hCh) < sum(hCh) && observe(i,n) >= 0.5*max(observe(:,n))
+                if max(hCh) < sum(hCh) && observe(i,n) >= 0.75*max(observe(:,n))
                     
                     try
                     
                     [~,second] = max(hCh);
                     
-                    if second > 100
-                        %gaussFit = fit(xCh(second-100:second+100),hCh(second-100:second+100),'gauss1');
+                    if second < observe(i,n)
+                        gaussFit = fit(xCh(second-250:second+250),hCh(second-250:second+250),'gauss1');
                     else
-                        %gaussFit = fit(xCh(1:second+100),hCh(1:second+100),'gauss1');
+                        gaussFit = fit(xCh(1:second+250),hCh(1:second+250),'gauss1');
                     end
                     
                         cValues = coeffvalues(gaussFit);
                         
-                        
-                        fwhm(i,n) = observe(i,n)/max(hCh);%(2*sqrt(log(2))*cValues(3))/sqrt(2);
-                        amplitude(i,n) = max(hCh);%cValues(1);
-                        x0(i,n) = xCh(second);%cValues(2);
-                        
+                        fwhm(i,n) = (2*sqrt(log(2))*cValues(3))/sqrt(2);
+                        amplitude(i,n) = cValues(1);
+                        x0(i,n) = cValues(2);
                         
                         %{
                         nVector = allNeurons.neurons{n}(isnan(allNeurons.neurons{n}(:,i)) == 0 | ~any(allNeurons.neurons{n}(:,i)),i);
@@ -61,6 +59,8 @@ for n=1:225
                         fwhm(i,n) = 1;
                         amplitude(i,n) = 0;
                         x0(i,n) = 0;
+                        'error'
+                        
                     end
                     
                 end
@@ -70,7 +70,7 @@ for n=1:225
         end
         
         try
-        [a,b] = min(fwhm(observe(:,n) >= 0.5*max(observe(:,n)),n));
+        [a,b] = min(fwhm(observe(:,n) >= 0.75*max(observe(:,n)),n));
         
         index = find(fwhm(:,n) <= 1.05*a & fwhm(:,n) > 0);
         
