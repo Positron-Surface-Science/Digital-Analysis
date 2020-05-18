@@ -1,4 +1,4 @@
-xCh = linspace(0,7.5,4096)';
+xCh = linspace(0,7.5,1024)';
 
 
     %observe = [];
@@ -11,27 +11,27 @@ for n=1:1024
     
     %if exact(n) == 1
         
-        for i=1:37
+        for i=2:2
             
-            if allNeurons.mwdParameters(2,i) ~= 0
+            if allNeurons.mwdParameters(2,1) ~= 0
                 
                 allNeurons.mwdNeurons{n}(allNeurons.mwdNeurons{n}(:,i) == 0,i) = NaN;
                 
-                hCh = histcounts(allNeurons.mwdNeurons{n}(:,i),'NumBins',4096,'BinLimits',[0 7.5])';
-                hCh = hCh/max(hCh);
+                hCh(:,n,i) = histcounts(allNeurons.mwdNeurons{n}(:,i),'NumBins',1024,'BinLimits',[0 7.5])';
+                hCh(:,n,i) = hCh(:,n,i)/max(hCh(:,n,i));
                 
                 observe(i,n) = numel(allNeurons.mwdNeurons{n}(isnan(allNeurons.mwdNeurons{n}(:,i)) == 0,i));
                 
-                if max(hCh) < sum(hCh) && observe(i,n) >= 0.75*max(observe(:,n))
+                if max(hCh(:,n,i)) < sum(hCh(:,n,i)) && observe(i,n) >= 0.75*max(observe(:,n))
                     
                     try
                     
-                    [~,second] = max(hCh);
+                    [~,second(n,i)] = max(hCh(:,n,i));
                     
                     if second < observe(i,n)
-                        gaussFit = fit(xCh(second-250:second+250),hCh(second-250:second+250),'gauss1');
+                        gaussFit = fit(xCh(second(n,i)-100:second(n,i)+100),hCh(second(n,i)-100:second(n,i)+100,n,i),'gauss1');
                     else
-                        gaussFit = fit(xCh(1:second+250),hCh(1:second+250),'gauss1');
+                        gaussFit = fit(xCh(1:second(n,i)+100),hCh(1:second(n,i)+100,n,i),'gauss1');
                     end
                     
                         cValues = coeffvalues(gaussFit);

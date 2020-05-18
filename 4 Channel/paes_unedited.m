@@ -77,7 +77,7 @@ if TypeIn == 1 && ggc == 0
         multiStopConditionsIn = 3;
         
     elseif multiStopIn == '1' && multiStopConditionsIn == 6
-        multiStopConditionsIn = 2
+        multiStopConditionsIn = 2;
         
     end
    
@@ -653,9 +653,11 @@ for s=1:numberOfPeaks
         % Rise time filter based on linear fit.
         if TypeIn == 3
             
-            riseTime = abs((VMinFraction2 - VMinFraction1)/pFit(1));
+            riseTime = abs((VMinFraction2 - VMinFraction1)/pFit(1))
             
-            if riseTime < RTFUpIn && riseTime > RTFLIn
+            goodRiseTime = true;
+            %{
+            if riseTime <= RTFUpIn && riseTime >= RTFLIn
                 goodRiseTime = true;
                 
             else
@@ -663,7 +665,7 @@ for s=1:numberOfPeaks
                 'goodRiseTime false'
                 
             end
-            
+            %}
         else
             goodRiseTime = true;
             

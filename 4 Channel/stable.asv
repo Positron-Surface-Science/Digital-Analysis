@@ -124,7 +124,7 @@ else
     %        controlIn/centroidValue < 7*(gammaWindow/numBins)
         
     if histMax >= 7 && abs((controlIn+centroidValue)/2 - centroidValue) < 2E-3
-        stableGe = geOutMax*((2*controlIn)/(controlIn+centroidValue));
+        stableGe = geOutMax*((2*centroidValue)/(controlIn+centroidValue));
         
     else
         stableGe = geOutMax;

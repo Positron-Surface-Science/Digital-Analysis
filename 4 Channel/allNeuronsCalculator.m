@@ -7,11 +7,11 @@ xToF = linspace(-0.25E-6,0.25E-6,1024)';
     %best2 = [];
     
 
-for n=1:1024
+for n=1:256
     
     %if exact(n) == 1
         
-        for i=1:1
+        for i=1:120
             
             if allNeurons.eletParameters(1,i) ~= 0
                 

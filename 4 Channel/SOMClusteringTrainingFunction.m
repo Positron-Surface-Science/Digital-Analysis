@@ -6,11 +6,11 @@
 %
 %   p5s - input data.
 
-x = tracesTMultSingle(:,1:10000);
+x = tracesSingle;
 
 % Create a Self-Organizing Map
-dimension1 = 32;
-dimension2 = 32;
+dimension1 = 16;
+dimension2 = 16;
 net = selforgmap([dimension1 dimension2],150,4,'hextop','linkdist');
 
 % Choose Plot Functions

@@ -66,7 +66,7 @@ noGood = 0;
 ANN = 0;
 
 try
-    
+   %{ 
     measurePulse = smooth(pulseIn.y,101,'moving') - ...
         mean(pulseIn.y(round(offset/T-2E-6/T):round(offset/T-1E-6/T)));
     
@@ -86,7 +86,7 @@ try
         return;
         
     end
-    
+    %}
 %{
     if ANN == 1
         ap = 0;
@@ -411,18 +411,17 @@ try
         %}
         %{
         try
-            if amp >= 6.2 && amp <= 7.3
             
-                assignin('base','amp',amp);
-                evalin('base','index = find(allNeurons.mwdNeurons{activeNeuron}(:,numberRuns) == 0);');
-                evalin('base','allNeurons.mwdNeurons{activeNeuron}(index(1),numberRuns) = amp;');
-                
-            end
+            assignin('base','amp',amp);
+            evalin('base','index = find(allNeurons.mwdNeurons{activeNeuron}(:,numberRuns) == 0);');
+            evalin('base','allNeurons.mwdNeurons{activeNeuron}(index(1),numberRuns) = amp;');
+            
             
         catch
             'vector full'
             
         end
+        %}
         %}
         %amp = amp - 0.5*amp*baseline^2;
         %assignin('base','pulseInx',pulseIn.x);

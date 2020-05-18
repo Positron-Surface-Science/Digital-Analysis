@@ -71,7 +71,7 @@ for n=iIn:iIn+9
                 'ANN ACTIVE FOR TIMING'
                 
             elseif TypeIn(c) == 3 && shapingTypeIn(c) == 0 && timingTypeIn(c) ~= 0
-                ANN = 0;
+                ANN = 1;
                 'ANN ACTIVE FOR SHAPING'
                 
             else
@@ -93,7 +93,7 @@ for n=iIn:iIn+9
             %---------------------------------------------------------------------------------------
             
             if (true)
-            
+            try
                 lo = dir([selectPath,'\*00001.trc']);
                 k = strfind(lo(1).name,'Trace');
                 
@@ -160,6 +160,10 @@ for n=iIn:iIn+9
             end
             
             fileName = [selectPath,'\',channelNumber{c},appendage,'.trc'];
+            
+            catch
+                noFile = true;
+            end
             
             % try to read the file; if it doesn't exist, try again twenty
             % times every five seconds, then break and try to read the
@@ -296,10 +300,10 @@ for n=iIn:iIn+9
                 end
                 %}
                 %if evalin('base','flags;') == 1
-                %{
-                assignin('base','trace',pulse{c}(s).y(18626:19063));
-                evalin('base','traces = horzcat(traces,trace);');
-                %}
+                
+                %assignin('base','trace',pulse{c}(s).y(2500:4000));
+                %evalin('base','traces = horzcat(traces,trace);');
+                
                 %end
                 %{
                 % ---------------------------------
@@ -317,7 +321,7 @@ for n=iIn:iIn+9
                 % ---------------------------------
                 % HPGe 9x25 Network
                 try
-                    netTrace =  pulse{c}(s).y(18626:19063);
+                    netTrace = pulse{c}(s).y(18626:19063);
                     %oldPulse(18626:19063);%
                     %netTrace = netTrace/max(netTrace);
                     
@@ -364,8 +368,8 @@ for n=iIn:iIn+9
                 'Active Neuron'
                 activeNeuron = find(out == 1)
                 
-                'timing type'
-                timingTypeIn(c)
+                %'timing type'
+                %timingTypeIn(c)
                 
                 if timingTypeIn(c) ~= 3
                     %net = evalin('base','net;');
@@ -538,7 +542,8 @@ for n=iIn:iIn+9
             %---------------------------------------------------------------------------------------
             
             if (TypeIn(c) == 3 || TypeIn(c) == 2) && shapingTypeIn(c) ~= 8 && ...
-                    (ANN == 0 || (ANN == 1 && activeNeuron ~= 0))
+                    ((ANN == 1 && activeNeuron ~= 0) || ANN == 0)
+                
                 [TPA,~,noGoodS(c,s)] = trapezoidalFilter(pulse{c}(s),oldPulse,shapingTypeIn(c),TFRFIn(c),TFTopIn(c),0);
                 
                 VoutMax{c}(s) = TPA;
@@ -767,8 +772,8 @@ for n=iIn:iIn+9
                 noGood(:,s)
                 noGoodS(:,s)
                 if sum(noGood(:,s)) == 0 && sum(noGoodS(:,s)) == 0 && exact2 == 1
-                    'prior calculation';
-                    timeOfFlight(s) = (crossTime{s}.mcp(1) - crossTime{s}.gamma(1));
+                    'prior calculation'
+                    timeOfFlight(s) = (crossTime{s}.mcp(1) - crossTime{s}.gamma(1))
                     
                     'mcp 2'
                     crossTime{s}.mcp(1)
@@ -776,11 +781,12 @@ for n=iIn:iIn+9
                     crossTime{s}.gamma(1)
                     %crossTime{s}.gamma(1)
                     %
+                    ANN
                     if (ANN == 1 && isempty(activeNeuron) == 0 && activeNeuron ~= 0)% && ...
                             %VoutMax{2}(s) >= 5.94 && VoutMax{2}(s) <= 7.23%6.713%best(4,activeNeuron) <= 10E-9 && VoutMax{2}(s) >= 6.2 && VoutMax{2}(s) <= 7.0 6.2
                             
-                        'SUBTRACTING';
-                        timeOfFlight(s) = timeOfFlight(s) - ParameterMatrix(3,activeNeuron); %ELETMatrix(activeNeuron,3);
+                        'SUBTRACTING'
+                        timeOfFlight(s) = timeOfFlight(s) - ParameterMatrix(3,activeNeuron) %ELETMatrix(activeNeuron,3);
                         %{
                         assignin('base','netTrace',netTrace);
                         evalin('base','input = horzcat(input,netTrace);');
@@ -799,7 +805,7 @@ for n=iIn:iIn+9
                             end
                         end
                     
-                    elseif ANN == 1
+                    elseif ANN ~= 0 && (isempty(activeNeuron) || activeNeuron == 0)
                         timeOfFlight(s) = NaN;
                         'NOT SUBTRACTING'
                     end

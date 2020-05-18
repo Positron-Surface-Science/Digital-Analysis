@@ -35,7 +35,7 @@ end
 if isempty(ggc)
     ggc = 0;
 end
-
+ggc = 1;
 exact2 = 1;
 timingTypeChanged = false;
 numPeaks = 0;
@@ -71,13 +71,14 @@ for n=iIn:iIn+9
                 'ANN ACTIVE FOR TIMING'
                 
             elseif TypeIn(c) == 3 && shapingTypeIn(c) == 0 && timingTypeIn(c) ~= 0
-                ANN = 0;
+                ANN = 1;
                 'ANN ACTIVE FOR SHAPING'
                 
             else
                 ANN = 0;
                 activeNeuron = 0;
                 'ANN NOT ACTIVE'
+                ELETMatrix = [0 0];
             end
             %s
             %'channel #'
@@ -92,7 +93,7 @@ for n=iIn:iIn+9
             %---------------------------------------------------------------------------------------
             
             if (true)
-            
+            try
                 lo = dir([selectPath,'\*00001.trc']);
                 k = strfind(lo(1).name,'Trace');
                 
@@ -159,6 +160,10 @@ for n=iIn:iIn+9
             end
             
             fileName = [selectPath,'\',channelNumber{c},appendage,'.trc'];
+            
+            catch
+                noFile = true;
+            end
             
             % try to read the file; if it doesn't exist, try again twenty
             % times every five seconds, then break and try to read the
@@ -295,10 +300,10 @@ for n=iIn:iIn+9
                 end
                 %}
                 %if evalin('base','flags;') == 1
-                %{
-                assignin('base','trace',pulse{c}(s).y(18626:19063));
-                evalin('base','traces = horzcat(traces,trace);');
-                %}
+                
+                %assignin('base','trace',pulse{c}(s).y(2500:4000));
+                %evalin('base','traces = horzcat(traces,trace);');
+                
                 %end
                 %{
                 % ---------------------------------
@@ -316,7 +321,7 @@ for n=iIn:iIn+9
                 % ---------------------------------
                 % HPGe 9x25 Network
                 try
-                    netTrace =  pulse{c}(s).y(18626:19063);
+                    netTrace =  pulse{c}(s).y(2500:4000); %pulse{c}(s).y(18626:19063);
                     %oldPulse(18626:19063);%
                     %netTrace = netTrace/max(netTrace);
                     
@@ -363,8 +368,8 @@ for n=iIn:iIn+9
                 'Active Neuron'
                 activeNeuron = find(out == 1)
                 
-                'timing type'
-                timingTypeIn(c)
+                %'timing type'
+                %timingTypeIn(c)
                 
                 if timingTypeIn(c) ~= 3
                     %net = evalin('base','net;');
@@ -467,14 +472,14 @@ for n=iIn:iIn+9
                 %timing = evalin('base','net3(activeNeuron)');
                 assignin('base','activeNeuron',activeNeuron);
                 
-                if timingTypeIn(c) ~= 3 && activeNeuron ~= 0
+                %if timingTypeIn(c) ~= 3 && activeNeuron ~= 0
                     
                     %best = evalin('base','best;');
                     
                     %'ELET PARAMETERS'
                     %ELETParam = best(1:2,activeNeuron);
                     
-                    ParameterMatrix(activeNeuron,1:2) = best(1:2,activeNeuron);
+                    ELETMatrix = ParameterMatrix(1:2,activeNeuron);
                     %best(1:2,activeNeuron);
                     
                     %if best(1,activeNeuron) == 0
@@ -485,12 +490,12 @@ for n=iIn:iIn+9
                     'FWHM';
                     %ELETMatrix(activeNeuron,4)
                     
-                elseif timingTypeIn(c) ~= 3
+                %elseif timingTypeIn(c) ~= 3
                     
-                    activeNeuron = 1;
-                    ELETMatrix(activeNeuron,1:2) = [0 0];
+                    %activeNeuron = 1;
+                    %ELETMatrix(activeNeuron,1:2) = [0 0];
                     
-                end
+                %end
                 
                 %'exact'
                 %exact(activeNeuron)
@@ -537,7 +542,8 @@ for n=iIn:iIn+9
             %---------------------------------------------------------------------------------------
             
             if (TypeIn(c) == 3 || TypeIn(c) == 2) && shapingTypeIn(c) ~= 8 && ...
-                    (ANN == 0 || (ANN == 1 && activeNeuron ~= 0))
+                    ((ANN == 1 && activeNeuron ~= 0) || ANN == 0)
+                
                 [TPA,~,noGoodS(c,s)] = trapezoidalFilter(pulse{c}(s),oldPulse,shapingTypeIn(c),TFRFIn(c),TFTopIn(c),0);
                 
                 VoutMax{c}(s) = TPA;
@@ -586,7 +592,7 @@ for n=iIn:iIn+9
                 end
                 
                 [crossTimeOut,noGood(c,s),numPeaks,~] = paes_unedited(timingTypeIn(c),TypeIn(c),c,multiStopIn,...
-                    multiStopConditionsIn,numPeaks,pulse{c}(s),RTFLIn,RTFUpIn,ParameterMatrix, ...
+                    multiStopConditionsIn,numPeaks,pulse{c}(s),RTFLIn,RTFUpIn,ELETMatrix, ...
                     DiscriminationVector,neuron,activeNeuron,ANN,ggc);
                 
                 %try
@@ -730,7 +736,7 @@ for n=iIn:iIn+9
                         
                         if ANN == 0 || (ANN == 1 && isempty(activeNeuron) == 0 && activeNeuron ~= 0)
                             'SUBTRACTING MULTI'
-                            timeOfFlight{s}(p) = timeOfFlight{s}(p);% - best(3,activeNeuron);
+                            timeOfFlight{s}(p) = timeOfFlight{s}(p) - ParameterMatrix(3,activeNeuron);
                             
                         else
                             timeOfFlight(s) = NaN;
@@ -766,7 +772,7 @@ for n=iIn:iIn+9
                 noGood(:,s)
                 noGoodS(:,s)
                 if sum(noGood(:,s)) == 0 && sum(noGoodS(:,s)) == 0 && exact2 == 1
-                    'prior calculation';
+                    'prior calculation'
                     timeOfFlight(s) = (crossTime{s}.mcp(1) - crossTime{s}.gamma(1));
                     
                     'mcp 2'
@@ -775,17 +781,18 @@ for n=iIn:iIn+9
                     crossTime{s}.gamma(1)
                     %crossTime{s}.gamma(1)
                     %
-                    if (ANN == 1 && isempty(activeNeuron) == 0 && activeNeuron ~= 0) && ...
-                            VoutMax{2}(s) >= 5.94 && VoutMax{2}(s) <= 7.23%6.713%best(4,activeNeuron) <= 10E-9 && VoutMax{2}(s) >= 6.2 && VoutMax{2}(s) <= 7.0 6.2
+                    ANN
+                    if (ANN == 1 && isempty(activeNeuron) == 0 && activeNeuron ~= 0)% && ...
+                            %VoutMax{2}(s) >= 5.94 && VoutMax{2}(s) <= 7.23%6.713%best(4,activeNeuron) <= 10E-9 && VoutMax{2}(s) >= 6.2 && VoutMax{2}(s) <= 7.0 6.2
                             
                         'SUBTRACTING';
-                        timeOfFlight(s) = timeOfFlight(s) - best(3,activeNeuron); %ELETMatrix(activeNeuron,3);
+                        timeOfFlight(s) = timeOfFlight(s)% - ParameterMatrix(3,activeNeuron); %ELETMatrix(activeNeuron,3);
                         %{
                         assignin('base','netTrace',netTrace);
                         evalin('base','input = horzcat(input,netTrace);');
                         evalin('base','target = horzcat(target,best11(:,activeNeuron));');
                         %}
-                        if ggc == 1 && 1==0
+                        if ggc == 1 %&& 1==0
                             try
                                 assignin('base','activeNeuron',activeNeuron);
                                 assignin('base','timeOfFlight',timeOfFlight(s));
@@ -798,7 +805,7 @@ for n=iIn:iIn+9
                             end
                         end
                     
-                    elseif ANN == 1
+                    elseif ANN ~= 0
                         timeOfFlight(s) = NaN;
                         'NOT SUBTRACTING'
                     end

@@ -1471,7 +1471,9 @@ vOut = conv(vIn.y(50:numel(vIn.y)-50),squarePulse);
         %aF = smooth(aF,150,'moving');
         
         %if err <= 1E-6
+        
         p = vIn.y(round(10E-6/Ts):round(35E-6/Ts));
+        %{
         p = p(350:2000);
         net = evalin('base','net4');
         pMean = evalin('base','ps1Mean');
@@ -1481,7 +1483,15 @@ vOut = conv(vIn.y(50:numel(vIn.y)-50),squarePulse);
         plot([p out])
         baseline = 0;%mean(out(1:50));
         out = out - baseline;
-        trapezoidalPlateauAverage = (max(smooth(out,10,'moving')))*100
+        %}
+        p = p(350:1750);
+        net = evalin('base','net4');
+        spec = spectrogram(p, 100, 'yaxis');
+        rispec = horzcat(real(spec(1:70,:)), imag(spec(1:70,:)));
+        
+        out = predict(net, rispec, 'ExecutionEnvironment', 'gpu');
+        plot([p out])
+        trapezoidalPlateauAverage = (max(smooth(out,25,'moving')))*100
         %trapezoidalPlateauAverage = (max(aF(1:numel(aF)-10))*100 + max(aF2(1:numel(aF2)-10))*100 + ...
         %    max(aF3(1:numel(aF3)-10))*100)/3;% - mean(vIn.y(round(10E-6/Ts):round(10E-6/Ts)+400))*100;% - mean(a(100:400))*100;
         vOut = out;
