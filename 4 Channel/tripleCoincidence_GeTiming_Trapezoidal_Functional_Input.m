@@ -2,7 +2,7 @@ function [VoutMax,timeOfFlight,errorOccurred,noFilesFound,dataFilter,baselineAve
     tripleCoincidence_GeTiming_Trapezoidal_Functional_Input(selectPathIn,...
     iIn,analysisTypeIn,multiStopIn,multiStopConditionsIn,TypeIn,timingTypeIn,shapingTypeIn,...
     FFTIn,coinCh,ggc,RTFLIn,RTFUpIn,TFTopIn,TFRFIn,TFTopInFast,TFRFInFast,BPFSwitch,dataFilter,...
-    DiscriminationVector,ParameterMatrix,ClusteringNetwork,neuron,ELETParam)
+    DiscriminationVector,ParameterMatrix,ClusteringNetwork,neuron,ELETParam,ELETUpper,ELETLower)
 
 %---------------------------------------------------------------------------
 % Primary coincidence function. Reads the waveforms from the Lecroy
@@ -35,7 +35,7 @@ end
 if isempty(ggc)
     ggc = 0;
 end
-
+%ggc = 1;
 exact2 = 1;
 timingTypeChanged = false;
 numPeaks = 0;
@@ -321,7 +321,11 @@ for n=iIn:iIn+9
                 % ---------------------------------
                 % HPGe 9x25 Network
                 try
-                    netTrace = pulse{c}(s).y(18626:19063);
+                    %trace2 = pulse{c}(s).y(1:5000);
+                    %assignin('base','trace2',trace2);
+                    netTrace = pulse{c}(s).y(18626:19063); %pulse{c}(s).y(2500:4000);
+                    %netTracex = pulse{c}(s).x(2500:4000);
+                    %assignin(
                     %oldPulse(18626:19063);%
                     %netTrace = netTrace/max(netTrace);
                     
@@ -350,13 +354,13 @@ for n=iIn:iIn+9
                 %assignin('base','netTrace',netTrace);
                 %network(net);
                 %best = ParameterMatrix;
-                net = ClusteringNetwork;
+                net = ClusteringNetwork; %evalin('base','net;'); %
                 %net = evalin('base','net');
                 %a = fieldnames(DiscriminationVector);
                 %exact = getfield(DiscriminationVector,a{1});
                 %mean(single(netTrace*1E4))
                 %assignin('base', 'paramTest', best);
-                out = net(single(netTrace*1E4));
+                out = net(single(netTrace)); %net(single(netTrace*1E4));
                 %'elet2'
                 %net2 = evalin('base','net4;');
                 %p2 = pulse{c}(s).y(18626:19063)/max(pulse{c}(s).y(18626:19063));
@@ -478,6 +482,7 @@ for n=iIn:iIn+9
                     
                     %'ELET PARAMETERS'
                     %ELETParam = best(1:2,activeNeuron);
+                    %ParameterMatrix = evalin('base','best2;');
                     
                     ELETMatrix = ParameterMatrix(1:2,activeNeuron);
                     %best(1:2,activeNeuron);
@@ -593,7 +598,7 @@ for n=iIn:iIn+9
                 
                 [crossTimeOut,noGood(c,s),numPeaks,~] = paes_unedited(timingTypeIn(c),TypeIn(c),c,multiStopIn,...
                     multiStopConditionsIn,numPeaks,pulse{c}(s),RTFLIn,RTFUpIn,ELETMatrix, ...
-                    DiscriminationVector,neuron,activeNeuron,ANN,ggc);
+                    DiscriminationVector,neuron,activeNeuron,ANN,ggc,ELETUpper,ELETLower);
                 
                 %try
                 
@@ -734,11 +739,11 @@ for n=iIn:iIn+9
                         'gamma 1'
                         crossTime{s}.gamma(1)
                         
-                        if ANN == 0 || (ANN == 1 && isempty(activeNeuron) == 0 && activeNeuron ~= 0)
+                        if (ANN == 1 && isempty(activeNeuron) == 0 && activeNeuron ~= 0)
                             'SUBTRACTING MULTI'
                             timeOfFlight{s}(p) = timeOfFlight{s}(p) - ParameterMatrix(3,activeNeuron);
                             
-                        else
+                        elseif ANN ~= 0 && (isempty(activeNeuron) || activeNeuron == 0)
                             timeOfFlight(s) = NaN;
                             'multi-stop neuron error'
                             
@@ -808,6 +813,7 @@ for n=iIn:iIn+9
                     elseif ANN ~= 0 && (isempty(activeNeuron) || activeNeuron == 0)
                         timeOfFlight(s) = NaN;
                         'NOT SUBTRACTING'
+                        
                     end
                     
                 else

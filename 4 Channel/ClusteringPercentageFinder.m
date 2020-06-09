@@ -4,25 +4,28 @@ ax1 = axes(f1);
 %f2 = figure;
 %ax2 = axes(f2);
 
-x = linspace(1,438,438);
+x = linspace(1,1501,1501);
 
 %percentage = zeros(144,2);
 range1 = 160;
 range2 = 180;
 
-%netMatrix = net(tracesTMultSingle(:,1:75000));
+%netMatrix = net(tracesSingle(:,1:70000));
 nt = [];
 
-for j=1015:1015
+for j=240:256
     
     nt=[];
     
     %if exact(j) == 1
+    
+    nt = tracesSingle(:,netMatrix(j,:) == 1);
+    
+    if ~isempty(nt)
         
-        nt = tracesTMultSingle(:,netMatrix(j,:) == 1);
+        nt2 = mean(nt,2);
         
-        if ~isempty(nt)
-        plot(ax1,x,nt)
+        plot(ax1,x,nt2)
         xticks(ax1,0:10:438);
         grid(ax1,'on')
         %beep
@@ -34,8 +37,8 @@ for j=1015:1015
             
         end
         
-        end
-        
+    end
+    
         %{
         if yesno == 'y'
         

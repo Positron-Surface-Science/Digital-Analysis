@@ -9,6 +9,7 @@ controlIn
 folderNumber
 
 peakStart = round(peakStart*(2048/numBins))
+controller = round(controlIn*(2048/numBins))
 numBins = 2048;
 dN = gammaWindow/numBins;
 dR = round(0.5/dN)
@@ -25,7 +26,7 @@ if (isempty(controlIn) || controlIn == 0) && folderNumber == 1
     assignin('base','stableControl',stableControl);
     % Controlling input to remove "peaks" at beginning and end.
     
-    [~,histMaxIndex] = max(stableControl(peakStart:numBins-10));
+    [~,histMaxIndex] = max(stableControl(peakStart:peakStart + round(1.5/dN)));
     
     histMaxIndex = histMaxIndex + peakStart
     
@@ -76,9 +77,9 @@ else
     
     % Controlling input to remove "peaks" at beginning and end.
     %plot(stableHistogram)
-    [histMax,histMaxIndex] = max(stableHistogram(peakStart:numBins-10));
+    [histMax,histMaxIndex] = max(stableHistogram(peakStart:peakStart + round(1.5/dN)));
     
-    histMaxIndex = histMaxIndex + peakStart;
+    histMaxIndex = histMaxIndex + peakStart
     
     fitobject = fit(bins(histMaxIndex-dR:histMaxIndex+dR), ...
         stableHistogram(histMaxIndex-dR:histMaxIndex+dR),'gauss1');
@@ -87,7 +88,7 @@ else
     plot(fitobject,bins(histMaxIndex-dR:histMaxIndex+dR), ...
         stableHistogram(histMaxIndex-dR:histMaxIndex+dR));
     
-    histMaxIndex = cvalues(2) + histMaxIndex - dR
+    histMaxIndex = cvalues(2)
     %plot(bins(histMaxIndex-dR:histMaxIndex+dR), ...
     %    stableHistogram(histMaxIndex-dR:histMaxIndex+dR))
     %{
@@ -122,13 +123,16 @@ else
 
     %if centroidValue/controlIn < 7*(gammaWindow/numBins) && ...
     %        controlIn/centroidValue < 7*(gammaWindow/numBins)
-        
-    if histMax >= 7 && abs((controlIn+centroidValue)/2 - centroidValue) < 2E-3
-        stableGe = geOutMax*((2*controlIn)/(controlIn+centroidValue));
+    
+    controller/centroidValue
+    %pause(5)
+    if histMax > 0
+        stableGe = geOutMax*(controller/centroidValue);
         
     else
         stableGe = geOutMax;
         'not enough counts'
+        pause(5)
         
     end
     

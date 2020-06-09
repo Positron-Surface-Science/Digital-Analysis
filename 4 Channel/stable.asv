@@ -9,9 +9,10 @@ controlIn
 folderNumber
 
 peakStart = round(peakStart*(2048/numBins))
+controller = round(controlIn*(2048/numBins))
 numBins = 2048;
 dN = gammaWindow/numBins;
-dR = round(0.5/dN)
+dR = round(0.25/dN)
 
 % Calculating control spectrum from first 10,000 (or stableLength) samples.
 if (isempty(controlIn) || controlIn == 0) && folderNumber == 1
@@ -25,7 +26,7 @@ if (isempty(controlIn) || controlIn == 0) && folderNumber == 1
     assignin('base','stableControl',stableControl);
     % Controlling input to remove "peaks" at beginning and end.
     
-    [~,histMaxIndex] = max(stableControl(peakStart:numBins-10));
+    [~,histMaxIndex] = max(stableControl(peakStart:peakStart + round(1/dN)));
     
     histMaxIndex = histMaxIndex + peakStart
     
@@ -76,9 +77,9 @@ else
     
     % Controlling input to remove "peaks" at beginning and end.
     %plot(stableHistogram)
-    [histMax,histMaxIndex] = max(stableHistogram(peakStart:numBins-10));
+    [histMax,histMaxIndex] = max(stableHistogram(peakStart:peakStart + round(1/dN)));
     
-    histMaxIndex = histMaxIndex + peakStart;
+    histMaxIndex = histMaxIndex + peakStart
     
     fitobject = fit(bins(histMaxIndex-dR:histMaxIndex+dR), ...
         stableHistogram(histMaxIndex-dR:histMaxIndex+dR),'gauss1');
@@ -124,7 +125,7 @@ else
     %        controlIn/centroidValue < 7*(gammaWindow/numBins)
         
     if histMax >= 7 && abs((controlIn+centroidValue)/2 - centroidValue) < 2E-3
-        stableGe = geOutMax*((2*centroidValue)/(controlIn+centroidValue));
+        stableGe = geOutMax*((2*controlIn)/(controlIn+centroidValue));
         
     else
         stableGe = geOutMax;

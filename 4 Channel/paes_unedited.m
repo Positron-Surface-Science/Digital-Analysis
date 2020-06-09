@@ -1,6 +1,6 @@
 function [crossTime,noGood,numberOfPeaks,riseTime] = paes_unedited(timingIn,TypeIn,c,...
     multiStopIn,multiStopConditionsIn,numPeaks,pulseIn,RTFLIn,RTFUpIn,ELETMatrix,...
-    DiscriminationVector,neuron,activeNeuron,ANN,ggc)
+    DiscriminationVector,neuron,activeNeuron,ANN,ggc,ELETUpper,ELETLower)
 
 % --------------------------------------------------------------------------
 % 'PAES' function which calculates the crossing "pick-off" time of detector
@@ -24,6 +24,7 @@ foundFrac2 = 1;
 goodRiseTime = false;
 findingNoise = false;
 neuronTemp = neuron;
+NaIPulse = 0;
 %ELETMatrix = ELETMatrix';
 %a = fieldnames(DiscriminationVector);
 %exact = getfield(DiscriminationVector,a{1});
@@ -42,10 +43,10 @@ if TypeIn == 1 && ggc == 0
     lastwarn('');
     % Set to detect peaks 15 ns apart (15*10.^(-9)/dN)
     [VMin{c},VMinIndex{c}] = findpeaks(pulseIny(50:numel(pulseIny)-50),...
-        'MinPeakDistance',round((5*10.^(-9))/dN), ...
-        'MinPeakHeight',1*10.^(-3),'MinPeakProminence',0.8*10.^(-3), ...
-        'MinPeakWidth',round((5*10.^(-9))/dN),'WidthReference', ...
-        'halfheight','MaxPeakWidth',round((40*10.^(-9)/dN)));
+        'MinPeakDistance',round((2.5*10.^(-9))/dN), ...
+        'MinPeakHeight',0.75*10.^(-3),'MinPeakProminence',0.75*10.^(-3), ...
+        'MinPeakWidth',round((2.5*10.^(-9))/dN),'WidthReference', ...
+        'halfheight','MaxPeakWidth',round((50*10.^(-9)/dN)));
     
     [warnMsg, ~] = lastwarn;
     VMinIndex{c} = VMinIndex{c} + 50;
@@ -121,6 +122,7 @@ elseif TypeIn ~= 1
         VMin{c} = abs(VMin2{c});
         VMinIndex{c} = VMinIndex2{c};
         pulseIny = abs(pulseIny);
+        NaIPulse = 1;
         
     end
     
@@ -214,12 +216,16 @@ for s=1:numberOfPeaks
     else
         % Fraction for CFD, ELET, and RTF.
         VMinFraction = (0.42*VMin{c}(s));
-        VMinFraction1 = (0.07*VMin{c}(s));
-        VMinFraction2 = (0.09*VMin{c}(s));
+        VMinFraction1 = 0.01*(ELETLower(c)*VMin{c}(s));
+        VMinFraction2 = 0.01*(ELETUpper(c)*VMin{c}(s));
         
         if ggc == 1 && TypeIn == 1
             VMinFraction1 = (0.20*VMin{c}(s));
             VMinFraction2 = (0.30*VMin{c}(s));
+            
+        elseif NaIPulse == 1
+            VMinFraction1 = 0.01*(ELETLower(c)*VMin{c}(s));
+            VMinFraction2 = 0.01*(ELETUpper(c)*VMin{c}(s));
             
         elseif TypeIn == 3 && ANN == 1
             assignin('base','ELETMatrix',ELETMatrix);
