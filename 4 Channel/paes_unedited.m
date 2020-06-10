@@ -215,7 +215,7 @@ for s=1:numberOfPeaks
         
     else
         % Fraction for CFD, ELET, and RTF.
-        VMinFraction = (0.42*VMin{c}(s));
+        VMinFraction = 0.01*(ELETLower(c)*VMin{c}(s));
         VMinFraction1 = 0.01*(ELETLower(c)*VMin{c}(s));
         VMinFraction2 = 0.01*(ELETUpper(c)*VMin{c}(s));
         
