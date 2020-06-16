@@ -2,7 +2,7 @@ function [VoutMax,timeOfFlight,errorOccurred,noFilesFound,dataFilter,baselineAve
     tripleCoincidence_GeTiming_Trapezoidal_Functional_Input(selectPathIn,...
     iIn,analysisTypeIn,multiStopIn,multiStopConditionsIn,TypeIn,timingTypeIn,shapingTypeIn,...
     FFTIn,coinCh,ggc,RTFLIn,RTFUpIn,TFTopIn,TFRFIn,TFTopInFast,TFRFInFast,BPFSwitch,dataFilter,...
-    DiscriminationVector,ParameterMatrix,ClusteringNetwork,neuron,ELETParam)
+    DiscriminationVector,ParameterMatrix,ClusteringNetwork,neuron,ELETParam,ELETUpper,ELETLower)
 
 %---------------------------------------------------------------------------
 % Primary coincidence function. Reads the waveforms from the Lecroy
@@ -35,7 +35,7 @@ end
 if isempty(ggc)
     ggc = 0;
 end
-ggc = 1;
+%ggc = 1;
 exact2 = 1;
 timingTypeChanged = false;
 numPeaks = 0;
@@ -93,23 +93,44 @@ for n=iIn:iIn+9
             %---------------------------------------------------------------------------------------
             
             if (true)
+            %try
             try
                 lo = dir([selectPath,'\*00001.trc']);
                 k = strfind(lo(1).name,'Trace');
+                zo = [];
+                t = [];
+            catch
+            end
+            try
+                lo = [];
+                k = [];
+                zo = dir([selectPath,'\*pulse_1.txt']);
+                t = strfind(zo(1).name,'pulse_');
+                
+            catch
+            end
                 
             if isempty(k)%(true)
-                channelNumber{c} = ['C',stringconversion(c),'1'];
                 
-                if n < 10
-                    appendage = ['0000',stringconversion(n)];
-                elseif n >= 10 && n < 100
-                    appendage = ['000',stringconversion(n)];
-                elseif n >= 100 && n < 1000
-                    appendage = ['00',stringconversion(n)];
-                elseif n >= 1000 && n < 10000
-                    appendage = ['0',stringconversion(n)];
-                else
-                    appendage = stringconversion(n);
+                if isempty(t)
+                    
+                    channelNumber{c} = ['C',stringconversion(c),'1'];
+                    
+                    if n < 10
+                        appendage = ['0000',stringconversion(n)];
+                    elseif n >= 10 && n < 100
+                        appendage = ['000',stringconversion(n)];
+                    elseif n >= 100 && n < 1000
+                        appendage = ['00',stringconversion(n)];
+                    elseif n >= 1000 && n < 10000
+                        appendage = ['0',stringconversion(n)];
+                    else
+                        appendage = stringconversion(n);
+                    end
+                    
+                elseif ~isempty(t)
+                    file = ['cebr3_vs_plastic_pulse_',stringconversion(n)];
+                    
                 end
                 
             end
@@ -159,33 +180,60 @@ for n=iIn:iIn+9
                 
             end
             
-            fileName = [selectPath,'\',channelNumber{c},appendage,'.trc'];
-            
-            catch
-                noFile = true;
+            if isempty(t)
+                fileName = [selectPath,'\',channelNumber{c},appendage,'.trc'];
+                
+            elseif ~isempty(t)
+                fileName = [selectPath,'\',file,'.txt'];
+                
             end
+            
+            %catch
+              %  noFile = true;
+           % end
             
             % try to read the file; if it doesn't exist, try again twenty
             % times every five seconds, then break and try to read the
             % next file if its existence never occurs.
             
-            while noFile == true && noFileCounter <= 7
+            tCounter = 1;
+            
+            while noFile == true && noFileCounter <= 7 && tCounter <= 10
                 
-                try
+                %try
+                    if isempty(t)
                     pulse{c}(s) = waveform.ReadLeCroyBinaryWaveform(fileName);
                     %pulse{c}(s).y = single(pulse{c}(s).y);
                     %pulse{c}(s).y
                     noFile = false;
                     
-                catch
-                    %errordlg('No .trc files within folder.','Incorrect Folder.');
-                    noFile = true;
-                    noFileCounter = noFileCounter + 1;
-                    pause(1);
+                    elseif ~isempty(t)
+                        
+                        allPulses = importdata(fileName, '\t', 1);
+                        assignin('base','allPulses',allPulses);
+                        
+                        if c == 1
+                            pulse{c}(s).x = allPulses.data(:,1)*10.^(-9);
+                            pulse{c}(s).y = allPulses.data(:,2)*10.^(-3);
+                            noFile = false;
+                            
+                        elseif c == 2
+                            pulse{c}(s).x = allPulses.data(:,3)*10.^(-9);
+                            pulse{c}(s).y = allPulses.data(:,4)*10.^(-3);
+                            noFile = false;
+                            
+                        end
+                    end
                     
-                end
+               % catch
+                    %errordlg('No .trc files within folder.','Incorrect Folder.');
+                    %noFile = true;
+                    %noFileCounter = noFileCounter + 1;
+                    %pause(1);
+                    
+                %end
                 
-                if noFileCounter >= 5
+                if noFileCounter >= 5 || tCounter >= 10
                     noGood(c,s) = true;
                     if multiStopIn == '0'
                         timeOfFlight(c) = NaN;
@@ -201,6 +249,8 @@ for n=iIn:iIn+9
                     return;
                     
                 end
+                
+                tCounter = tCounter + 1;
                 
             end
             
@@ -219,10 +269,19 @@ for n=iIn:iIn+9
             end
             %}
             
-            offset = -pulse{c}(s).info.OFFSET;
-            Fs = pulse{c}(s).desc.fs;
-            T = (1/Fs);
-            oldPulse = pulse{c}(s).y;
+            if isempty(t)
+                offset = -pulse{c}(s).info.OFFSET;
+                Fs = pulse{c}(s).desc.fs;
+                T = (1/Fs);
+                oldPulse = pulse{c}(s).y;
+                
+            else ~isempty(t)
+                offset = 13E-9;
+                Fs = 5E9;
+                T = (1/Fs)
+                oldPulse = pulse{c}(s).y;
+                
+            end
             
             end
             
@@ -249,14 +308,19 @@ for n=iIn:iIn+9
                     pulse{c}(s).y = pulse{c}(s).y - baseline;
                     
                 else
+                    if isempty(k)
                     baseline = mean(pulse{c}(s).y(round((offset-999E-9)/T):round((offset-500E-9)/T)));
                     pulse{c}(s).y = pulse{c}(s).y - baseline;
+                    end
                     
                 end
             catch
                 'bpf error'
             end
-            
+            if c==2
+                assignin('base','trace',pulse{c}(s).y(round((T):round((offset+500E-9)/T)));
+                evalin('base','NaITraces = horzcat(NaITraces,trace(2550:3000));');
+            end
             %{
             if TypeIn(1) == 4 && TypeIn(c) == 3
                 assignin('base','trace',pulse{c}(s).y(round((offset-999E-9)/T):round((offset+500E-9)/T)));
@@ -321,7 +385,11 @@ for n=iIn:iIn+9
                 % ---------------------------------
                 % HPGe 9x25 Network
                 try
-                    netTrace =  pulse{c}(s).y(2500:4000); %pulse{c}(s).y(18626:19063);
+                    %trace2 = pulse{c}(s).y(1:5000);
+                    %assignin('base','trace2',trace2);
+                    netTrace = pulse{c}(s).y(18626:19063); %pulse{c}(s).y(2500:4000);
+                    %netTracex = pulse{c}(s).x(2500:4000);
+                    %assignin(
                     %oldPulse(18626:19063);%
                     %netTrace = netTrace/max(netTrace);
                     
@@ -350,13 +418,13 @@ for n=iIn:iIn+9
                 %assignin('base','netTrace',netTrace);
                 %network(net);
                 %best = ParameterMatrix;
-                net = ClusteringNetwork;
+                net = ClusteringNetwork; %evalin('base','net;'); %
                 %net = evalin('base','net');
                 %a = fieldnames(DiscriminationVector);
                 %exact = getfield(DiscriminationVector,a{1});
                 %mean(single(netTrace*1E4))
                 %assignin('base', 'paramTest', best);
-                out = net(single(netTrace*1E4));
+                out = net(single(netTrace)); %net(single(netTrace*1E4));
                 %'elet2'
                 %net2 = evalin('base','net4;');
                 %p2 = pulse{c}(s).y(18626:19063)/max(pulse{c}(s).y(18626:19063));
@@ -478,6 +546,7 @@ for n=iIn:iIn+9
                     
                     %'ELET PARAMETERS'
                     %ELETParam = best(1:2,activeNeuron);
+                    %ParameterMatrix = evalin('base','best2;');
                     
                     ELETMatrix = ParameterMatrix(1:2,activeNeuron);
                     %best(1:2,activeNeuron);
@@ -591,9 +660,11 @@ for n=iIn:iIn+9
                     
                 end
                 
+                %plot(pulse{c}(s).x,pulse{c}(s).y)
+                %pause(1)
                 [crossTimeOut,noGood(c,s),numPeaks,~] = paes_unedited(timingTypeIn(c),TypeIn(c),c,multiStopIn,...
                     multiStopConditionsIn,numPeaks,pulse{c}(s),RTFLIn,RTFUpIn,ELETMatrix, ...
-                    DiscriminationVector,neuron,activeNeuron,ANN,ggc);
+                    DiscriminationVector,neuron,activeNeuron,ANN,ggc,ELETUpper,ELETLower);
                 
                 %try
                 
@@ -734,11 +805,11 @@ for n=iIn:iIn+9
                         'gamma 1'
                         crossTime{s}.gamma(1)
                         
-                        if ANN == 0 || (ANN == 1 && isempty(activeNeuron) == 0 && activeNeuron ~= 0)
+                        if (ANN == 1 && isempty(activeNeuron) == 0 && activeNeuron ~= 0)
                             'SUBTRACTING MULTI'
                             timeOfFlight{s}(p) = timeOfFlight{s}(p) - ParameterMatrix(3,activeNeuron);
                             
-                        else
+                        elseif ANN ~= 0 && (isempty(activeNeuron) || activeNeuron == 0)
                             timeOfFlight(s) = NaN;
                             'multi-stop neuron error'
                             
@@ -773,7 +844,7 @@ for n=iIn:iIn+9
                 noGoodS(:,s)
                 if sum(noGood(:,s)) == 0 && sum(noGoodS(:,s)) == 0 && exact2 == 1
                     'prior calculation'
-                    timeOfFlight(s) = (crossTime{s}.mcp(1) - crossTime{s}.gamma(1));
+                    timeOfFlight(s) = (crossTime{s}.mcp(1) - crossTime{s}.gamma(1))
                     
                     'mcp 2'
                     crossTime{s}.mcp(1)
@@ -785,14 +856,14 @@ for n=iIn:iIn+9
                     if (ANN == 1 && isempty(activeNeuron) == 0 && activeNeuron ~= 0)% && ...
                             %VoutMax{2}(s) >= 5.94 && VoutMax{2}(s) <= 7.23%6.713%best(4,activeNeuron) <= 10E-9 && VoutMax{2}(s) >= 6.2 && VoutMax{2}(s) <= 7.0 6.2
                             
-                        'SUBTRACTING';
-                        timeOfFlight(s) = timeOfFlight(s)% - ParameterMatrix(3,activeNeuron); %ELETMatrix(activeNeuron,3);
+                        'SUBTRACTING'
+                        timeOfFlight(s) = timeOfFlight(s) - ParameterMatrix(3,activeNeuron) %ELETMatrix(activeNeuron,3);
                         %{
                         assignin('base','netTrace',netTrace);
                         evalin('base','input = horzcat(input,netTrace);');
                         evalin('base','target = horzcat(target,best11(:,activeNeuron));');
                         %}
-                        if ggc == 1 %&& 1==0
+                        if ggc == 1 && 1==0
                             try
                                 assignin('base','activeNeuron',activeNeuron);
                                 assignin('base','timeOfFlight',timeOfFlight(s));
@@ -805,9 +876,10 @@ for n=iIn:iIn+9
                             end
                         end
                     
-                    elseif ANN ~= 0
+                    elseif ANN ~= 0 && (isempty(activeNeuron) || activeNeuron == 0)
                         timeOfFlight(s) = NaN;
                         'NOT SUBTRACTING'
+                        
                     end
                     
                 else

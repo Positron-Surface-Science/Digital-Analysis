@@ -9,8 +9,8 @@
 x = tracesSingle;
 
 % Create a Self-Organizing Map
-dimension1 = 16;
-dimension2 = 16;
+dimension1 = 18;
+dimension2 = 18;
 net = selforgmap([dimension1 dimension2],150,4,'hextop','linkdist');
 
 % Choose Plot Functions

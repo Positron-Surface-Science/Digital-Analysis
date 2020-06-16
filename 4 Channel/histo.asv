@@ -1,6 +1,6 @@
 function [hToF,hGe,geMaxVsToF,gVsg,eVse] = histo(numberOfSamples,multiStop,numBins,ToFChannel, ...
     gammaWindow,timingWindow,geOutMax,timeOfFlight,energyCoinCha,inputChannel,GGCoinCha, ...
-    GGCoinOn,eeCoinOn,multiStopConditionsIn,secondECutoff)
+    GGCoinOn,eeCoinOn,multiStopConditionsIn)
 
 if GGCoinOn == false && eeCoinOn == false
     
@@ -46,12 +46,12 @@ if GGCoinOn == false && eeCoinOn == false
             %hToF = hToFHist.Values';
             
         else
-            %'IN HISTOGRAM'
-            %timeOfFlight
+            'IN HISTOGRAM'
+            timeOfFlight
             %pause(2)
             hToF = histcounts(timeOfFlight,'NumBins',numBins(ToFChannel),'BinLimits', ...
                 [ToFInitialTime timingWindow])';
-            %assignin('base','hToF',hToF);
+            assignin('base','hToF',hToF);
             %hToF = hToFHist.Values';
             
         end
@@ -183,7 +183,6 @@ elseif GGCoinOn == true && eeCoinOn == false
 elseif GGCoinOn == false && eeCoinOn == true
     VoutMax2 = geOutMax;
     gVsg = [];
-    cutoff = double(secondECutoff)*10.^(-9);
     
     if energyCoinCha == inputChannel
         geMaxVsToF = zeros(numBins(energyCoinCha),numBins(ToFChannel),numBins(ToFChannel),'uint8');
@@ -216,16 +215,14 @@ elseif GGCoinOn == false && eeCoinOn == true
                         whichBinTimeOfFlight{s}(1) <= numBins(ToFChannel) && ...
                         whichBinGe(s) > 0 && whichBinTimeOfFlight{s}(2) > 0 && ...
                         whichBinTimeOfFlight{s}(2) <= numBins(ToFChannel) && ...
-                        whichBinGe(s) <= numBins(energyCoinCha) && ...
-                        timeOfFlight{s}(2) >= cutoff
-                        
+                        whichBinGe(s) <= numBins(energyCoinCha)
                     
                     geMaxVsToF(whichBinGe(s),whichBinTimeOfFlight{s}(1),whichBinTimeOfFlight{s}(2)) =  ...
                         geMaxVsToF(whichBinGe(s),whichBinTimeOfFlight{s}(1),whichBinTimeOfFlight{s}(2)) + 1;
                     
                 end
                 
-        %assignin('base','geMaxVsToF',geMaxVsToF);
+        assignin('base','geMaxVsToF',geMaxVsToF);
             end
         end
         

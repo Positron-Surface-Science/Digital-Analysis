@@ -6,11 +6,11 @@
 %
 %   p5s - input data.
 
-x = mcpTracesMini;
+x = tracesSingle;
 
 % Create a Self-Organizing Map
-dimension1 = 5;
-dimension2 = 5;
+dimension1 = 18;
+dimension2 = 18;
 net = selforgmap([dimension1 dimension2],150,4,'hextop','linkdist');
 
 % Choose Plot Functions
@@ -18,7 +18,8 @@ net = selforgmap([dimension1 dimension2],150,4,'hextop','linkdist');
 %net.plotFcns = {'plotsomtop','plotsomnc','plotsomnd', ...
     %'plotsomplanes', 'plotsomhits', 'plotsompos'};
 
-net.trainParam.epochs = 100;
+net.trainParam.epochs = 2000;
+%net.inputWeights{1,1}.weightFcn = 'dotprod';
 
 % Train the Network
 [net,tr] = train(net,x);
