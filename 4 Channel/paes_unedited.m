@@ -22,6 +22,7 @@ catch
     dN = 1/(5E9);
     
 end
+
 riseTime = 1;
 foundFraction = [];
 foundFraction1 = [];
@@ -231,27 +232,15 @@ for s=1:numberOfPeaks
         VMinFraction = 0.01*(ELETLower(c)*VMin{c}(s));
         VMinFraction1 = 0.01*(ELETLower(c)*VMin{c}(s));
         VMinFraction2 = 0.01*(ELETUpper(c)*VMin{c}(s));
-        
-        if ggc == 1 && TypeIn == 1
-            VMinFraction1 = (0.20*VMin{c}(s));
-            VMinFraction2 = (0.30*VMin{c}(s));
             
-        elseif scintPulse == 1
-            VMinFraction1 = 0.01*(ELETLower(c)*VMin{c}(s));
-            VMinFraction2 = 0.01*(ELETUpper(c)*VMin{c}(s));
-            
-        elseif ANN(c) == 1
-            assignin('base','ELETMatrix',ELETMatrix);
-            
+        if ANN(c) == 1
+            %assignin('base','ELETMatrix',ELETMatrix);
+            ELETMatrix
             VMinFraction1 = (ELETMatrix(1)*0.01*VMin{c}(s));
             VMinFraction2 = (ELETMatrix(2)*0.01*VMin{c}(s));
             
             %VMinFraction1 = (0.07*VMin{c}(s));
             %VMinFraction2 = (0.09*VMin{c}(s));
-            
-        elseif ggc == 0 && TypeIn == 1
-            VMinFraction1 = (0.1*VMin{c}(s));
-            VMinFraction2 = (0.3*VMin{c}(s));
             
         end
         

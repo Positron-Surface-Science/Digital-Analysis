@@ -39,6 +39,8 @@ end
 exact2 = 1;
 timingTypeChanged = false;
 numPeaks = 0;
+t = [];
+k = [];
 
 % PAES analysis definitions.
 
@@ -111,6 +113,7 @@ for n=iIn:iIn+9
                             k = [];
                             zo = dir([selectPath,'\*pulse_1.txt']);
                             t = strfind(zo(1).name,'pulse_');
+                            noT = false;
                             
                         catch
                         end
@@ -556,6 +559,7 @@ for n=iIn:iIn+9
                     %ParameterMatrix = evalin('base','best2;');
                     
                     ELETMatrix = ELETParam;%ParameterMatrix(1:2,activeNeuron);
+                    
                     %best(1:2,activeNeuron);
                     
                     %if best(1,activeNeuron) == 0

@@ -1,5 +1,5 @@
 function [hToF,hGe,geMaxVsToF,gVsg,eVse] = histo(numberOfSamples,multiStop,numBins,ToFChannel, ...
-    gammaWindow,timingWindow,geOutMax,timeOfFlight,energyCoinCha,inputChannel,GGCoinCha, ...
+    gammaWindow,gammaLower,timingWindow,geOutMax,timeOfFlight,energyCoinCha,inputChannel,GGCoinCha, ...
     GGCoinOn,eeCoinOn,multiStopConditionsIn,secondECutoff)
 
 if GGCoinOn == false && eeCoinOn == false
@@ -65,10 +65,10 @@ if GGCoinOn == false && eeCoinOn == false
     if isempty(geOutMax) == 0 && inputChannel ~= ToFChannel
         VoutMax2 = geOutMax;
         
-        bins3 = linspace(0,gammaWindow,numBins(inputChannel))';
-        bin3Size = (gammaWindow/numBins(inputChannel));
+        bins3 = linspace(gammaLower,gammaWindow,numBins(inputChannel))';
+        bin3Size = ((gammaWindow - gammaLower)/numBins(inputChannel));
         
-        hGe = histcounts(VoutMax2,'NumBins',numBins(inputChannel),'BinLimits',[0 gammaWindow])';
+        hGe = histcounts(VoutMax2,'NumBins',numBins(inputChannel),'BinLimits',[gammaLower gammaWindow])';
         %hGe = hGeHist.Values';
         
     else
@@ -156,8 +156,8 @@ elseif GGCoinOn == true && eeCoinOn == false
     gVsg = zeros(numBins(GGCoinCha(1)),numBins(GGCoinCha(2)));
     
     for g=1:2
-        bins(g,:) = linspace(0,gammaWindow(GGCoinCha(g)),numBins(GGCoinCha(g)))';
-        binsSize(g) = (gammaWindow(GGCoinCha(g))/numBins(GGCoinCha(g)));
+        bins(g,:) = linspace(gammaLower(GGCoinCha(g)),gammaWindow(GGCoinCha(g)),numBins(GGCoinCha(g)))';
+        binsSize(g) = ((gammaWindow(GGCoinCha(g)) - gammaLower(GGCoinCha(g)))/numBins(GGCoinCha(g)));
         
     end
     
@@ -183,10 +183,11 @@ elseif GGCoinOn == true && eeCoinOn == false
 elseif GGCoinOn == false && eeCoinOn == true
     VoutMax2 = geOutMax;
     gVsg = [];
+    'CUTOFF'
     cutoff = double(secondECutoff)*10.^(-9);
     
     if energyCoinCha == inputChannel
-        geMaxVsToF = zeros(numBins(energyCoinCha),numBins(ToFChannel),numBins(ToFChannel),'uint8');
+        geMaxVsToF = zeros(numBins(energyCoinCha),numBins(ToFChannel),numBins(ToFChannel),'uint16');
         
     end
     
@@ -201,14 +202,16 @@ elseif GGCoinOn == false && eeCoinOn == true
             
         end
         
-        bin3Size = (gammaWindow/numBins(inputChannel));
+        bin3Size = ((gammaWindow - gammaLower)/numBins(inputChannel));
         binSize = (timingWindow - ToFInitialTime)/numBins(ToFChannel);
         
         for s=1:numberOfSamples
-            whichBinGe(s) = ceil(VoutMax2(s)/bin3Size);
+            whichBinGe(s) = ceil((VoutMax2(s) - gammaLower)/bin3Size);
             
-            if multiStopConditionsIn == 6 && numel(timeOfFlight{s}) == 2
+            if multiStopConditionsIn == 6 && numel(timeOfFlight{s}) == 2 && ...
+                    ~isnan(timeOfFlight{s}(1)) && ~isnan(timeOfFlight{s}(2))
                 'ASDFLASGKAFGKDFGASGASFG'
+                cutoff
                 whichBinTimeOfFlight{s}(1) = ceil((timeOfFlight{s}(1)+250*10.^(-9))/binSize);
                 whichBinTimeOfFlight{s}(2) = ceil((timeOfFlight{s}(2)+250*10.^(-9))/binSize);
                 
@@ -217,7 +220,7 @@ elseif GGCoinOn == false && eeCoinOn == true
                         whichBinGe(s) > 0 && whichBinTimeOfFlight{s}(2) > 0 && ...
                         whichBinTimeOfFlight{s}(2) <= numBins(ToFChannel) && ...
                         whichBinGe(s) <= numBins(energyCoinCha) && ...
-                        timeOfFlight{s}(2) >= cutoff
+                        timeOfFlight{s}(2) <= cutoff
                         
                     
                     geMaxVsToF(whichBinGe(s),whichBinTimeOfFlight{s}(1),whichBinTimeOfFlight{s}(2)) =  ...
