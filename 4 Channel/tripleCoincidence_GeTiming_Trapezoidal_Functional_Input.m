@@ -72,7 +72,7 @@ for n=iIn:iIn+9
                 'ANN ACTIVE FOR TIMING'
                 
             elseif TypeIn(c) == 3 && shapingTypeIn(c) == 0 && timingTypeIn(c) ~= 0
-                ANN(c) = 1;
+                ANN(c) = 0;
                 'ANN ACTIVE FOR SHAPING'
                 
             else
@@ -135,7 +135,7 @@ for n=iIn:iIn+9
                             end
                             
                         elseif ~isempty(t)
-                            file = ['cebr3_vs_plastic_pulse_',stringconversion(n)];
+                            file = ['cebr3_vs_plastic_pulse_pulse_',stringconversion(n)];
                             
                         end
                         
@@ -309,24 +309,30 @@ for n=iIn:iIn+9
             
             try
                 if BPFSwitch == '1'
-                    [pulse{c}(s).y,dataFilter,baseline] = bpfilter(pulse{c}(s),c,FFTIn,dataFilter);
-                    baseline = mean(pulse{c}(s).y(round((offset-999E-9)/T):round((offset-500E-9)/T)));
-                    pulse{c}(s).y = pulse{c}(s).y - baseline;
+                    %[pulse{c}(s).y,dataFilter,baseline] = bpfilter(pulse{c}(s),c,FFTIn,dataFilter);
+                    %baseline = mean(pulse{c}(s).y(round((offset-999E-9)/T):round((offset-500E-9)/T)));
+                    %pulse{c}(s).y = pulse{c}(s).y - baseline;
                     
                 else
                     if isempty(k)
-                    baseline = mean(pulse{c}(s).y(round((offset-999E-9)/T):round((offset-500E-9)/T)));
-                    pulse{c}(s).y = pulse{c}(s).y - baseline;
+                        baseline = mean(pulse{c}(s).y(round((offset-999E-9)/T):round((offset-500E-9)/T)));
+                        pulse{c}(s).y = pulse{c}(s).y - baseline;
+                        'BASELINE CORRECTION PERFORMED'
+                        
                     end
                     
                 end
+                
             catch
                 'bpf error'
             end
+            
             if c==1 && false
-                %plot(pulse{c}(s).y)
+                plot(pulse{c}(s).y(45:500))
                 assignin('base','trace',pulse{c}(s).y(45:500));
                 evalin('base','traces = horzcat(traces,trace);');
+                %assignin('base','p',pulse{c}(s).y(18626:19063)/max(pulse{c}(s).y(18626:19063)));
+                %assignin('base','xTrace',pulse{c}(s).x(18626:19063));
             end
             %{
             if TypeIn(1) == 4 && TypeIn(c) == 3
@@ -395,9 +401,9 @@ for n=iIn:iIn+9
                     %trace2 = pulse{c}(s).y(1:5000);
                     %assignin('base','trace2',trace2);
                     netTrace = pulse{c}(s).y(45:500);
-                    netTrace = netTrace(10:55);
-                    plot(netTrace)
-                    %pulse{c}(s).y(18626:19063); %pulse{c}(s).y(2500:4000);
+                    %netTrace = netTrace(10:55);
+                    %plot(netTrace)
+                    %netTrace = pulse{c}(s).y(18626:19063); %pulse{c}(s).y(2500:4000);
                     %netTracex = pulse{c}(s).x(2500:4000);
                     %assignin(
                     %oldPulse(18626:19063);%
@@ -428,12 +434,13 @@ for n=iIn:iIn+9
                 %assignin('base','netTrace',netTrace);
                 %network(net);
                 %best = ParameterMatrix;
-                net = evalin('base','net;'); %ClusteringNetwork; 
-                %net = evalin('base','net');
+                %net = ClusteringNetwork; %evalin('base','net;'); %
+                net = evalin('base','net');
                 %a = fieldnames(DiscriminationVector);
                 %exact = getfield(DiscriminationVector,a{1});
                 %mean(single(netTrace*1E4))
                 %assignin('base', 'paramTest', best);
+                %plot(netTrace)
                 out = net(single(netTrace)); %net(single(netTrace*1E4));
                 %'elet2'
                 %net2 = evalin('base','net4;');
@@ -445,7 +452,9 @@ for n=iIn:iIn+9
                 %elet2
                 'Active Neuron'
                 activeNeuron = find(out == 1)
-                
+                %pause(1)
+                %assignin('base','netTrace',netTrace);
+                %evalin('base','plot([netTrace,tracesSingle(:,1)]);');
                 %'timing type'
                 %timingTypeIn(c)
                 
@@ -551,30 +560,31 @@ for n=iIn:iIn+9
                 assignin('base','activeNeuron',activeNeuron);
                 
                 %if timingTypeIn(c) ~= 3 && activeNeuron ~= 0
-                    
-                    %best = evalin('base','best;');
-                    
-                    %'ELET PARAMETERS'
-                    %ELETParam = best(1:2,activeNeuron);
-                    %ParameterMatrix = evalin('base','best2;');
-                    
-                    ELETMatrix = ELETParam;%ParameterMatrix(1:2,activeNeuron);
-                    
-                    %best(1:2,activeNeuron);
-                    
-                    %if best(1,activeNeuron) == 0
-                    %ELETMatrix(activeNeuron,1:2) = [7 9];
-                    
-                    %end
-                    
-                    'FWHM';
-                    %ELETMatrix(activeNeuron,4)
-                    
+                
+                %best = evalin('base','best;');
+                
+                %'ELET PARAMETERS'
+                %ELETParam = best(1:2,activeNeuron);
+                %ParameterMatrix = evalin('base','best2;');
+                %ELETParam
+                'ELET PARAM'
+                ELETMatrix = ELETParam; %ParameterMatrix(1:2,activeNeuron);
+                ELETMatrix
+                %best(1:2,activeNeuron);
+                
+                %if best(1,activeNeuron) == 0
+                %ELETMatrix(activeNeuron,1:2) = [7 9];
+                
+                %end
+                
+                'FWHM';
+                %ELETMatrix(activeNeuron,4)
+                
                 %elseif timingTypeIn(c) ~= 3
-                    
-                    %activeNeuron = 1;
-                    %ELETMatrix(activeNeuron,1:2) = [0 0];
-                    
+                
+                %activeNeuron = 1;
+                %ELETMatrix(activeNeuron,1:2) = [0 0];
+                
                 %end
                 
                 %'exact'
@@ -866,7 +876,8 @@ for n=iIn:iIn+9
                     %sum(ANN)
                     %isempty(activeNeuron)
                     %activeNeuron
-                    if (sum(ANN) == 1 && isempty(activeNeuron) == 0 && activeNeuron ~= 0)% && ...
+                    
+                    if (sum(ANN) == 1 && ~isempty(activeNeuron) && activeNeuron ~= 0)% && ...
                             %VoutMax{2}(s) >= 5.94 && VoutMax{2}(s) <= 7.23%6.713%best(4,activeNeuron) <= 10E-9 && VoutMax{2}(s) >= 6.2 && VoutMax{2}(s) <= 7.0 6.2
                             
                         'SUBTRACTING'
@@ -877,16 +888,16 @@ for n=iIn:iIn+9
                         evalin('base','target = horzcat(target,best11(:,activeNeuron));');
                         %}
                         if true
-                            try
+                            %try
                                 assignin('base','activeNeuron',activeNeuron);
                                 assignin('base','timeOfFlight',timeOfFlight(s));
                                 evalin('base','index = find(allNeurons.neurons{activeNeuron}(:,numberRuns) == 0);');
                                 evalin('base','allNeurons.neurons{activeNeuron}(index(1),numberRuns) = timeOfFlight;');
                                 
-                            catch
-                                'vector full'
+                            %catch
+                            %    'vector full'
                                 
-                            end
+                            %end
                         end
                     
                     elseif ANN ~= 0 && (isempty(activeNeuron) || activeNeuron == 0)

@@ -1,7 +1,7 @@
 
 summer = zeros(512,1);
 
-for Ge = 143:256
+for Ge = 1:256
     for ToF1 = 1:512
         for ToF2 = 1:512
             %for Ge = 2633:3000

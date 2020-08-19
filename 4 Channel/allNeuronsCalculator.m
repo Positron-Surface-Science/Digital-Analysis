@@ -1,30 +1,32 @@
-xToF = linspace(-0.75E-9,1.5E-9,1024)';
+xToF = linspace(-1E-9,1.5E-9,256)';
 
 
     observe = [];
     fwhm = [];
     index = [];
-    %best2 = [];
+    best2 = [];
+    amplitude = [];
+    x0 = [];
     
 
-for n=1:324
+for n=1:49
     
     %if exact(n) == 1
         
-        for i=1:100
+        for i=1:42
             
             if allNeurons.eletParameters(1,i) ~= 0
                 
                 allNeurons.neurons{n}(allNeurons.neurons{n}(:,i) == 0,i) = NaN;
                 
-                hToF = histcounts(allNeurons.neurons{n}(:,i),'NumBins',1024,'BinLimits',[-0.75E-9 1.5E-9])';
+                hToF = histcounts(allNeurons.neurons{n}(:,i),'NumBins',256,'BinLimits',[-1E-9 1.5E-9])';
                 hToF = hToF/max(hToF);
                 plot(hToF)
                 observe(i,n) = numel(allNeurons.neurons{n}(~isnan(allNeurons.neurons{n}(:,i)),i));
                 
                 if max(hToF) < sum(hToF)
                     
-                    try
+                    %try
                         
                         [~,second] = max(hToF);
                         
@@ -56,14 +58,14 @@ for n=1:324
                         %}
                         %fwhm(i,n) = std(nVector);
                         %x0(i,n) = mean(nVector);
-                        
+                        %{
                     catch
                         fwhm(i,n) = 1;
                         amplitude(i,n) = 0;
                         'try error 1'
                         
                     end
-                    
+                    %}
                 end
                 
             end
@@ -72,9 +74,9 @@ for n=1:324
         
         try
             
-            [a,b] = min(fwhm(observe(:,n) >= 0.25*max(observe(:,n)),n));
+            [a,b] = min(fwhm(observe(:,n) >= 0.9*max(observe(:,n)),n));
             
-            index = find(fwhm(:,n) <= 1.5*a & fwhm(:,n) > 0);
+            index = find(fwhm(:,n) <= 1.25*a & fwhm(:,n) > 0);
             
             [~,minFwhmIndex] = min(fwhm(index,n));
             

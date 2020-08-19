@@ -2,7 +2,7 @@ function [trapezoidalPlateauAverage,vOut,noGood] = trapezoidalFilter(vIn,oldPuls
 format long
 digits(15)
 
-try
+%try
 % --------------------------------------------------------------------------
 % Trapezoidal filter for germanium pulses.
 % If resolution gets worse, go back to a minimum value of peakDistance and
@@ -30,14 +30,20 @@ G = round(gRound*divid/Ts);
 [VMax,VMaxIndex] = max(vIn.y(50:numel(vIn.y)-50));
 [VMin,VMinIndex] = min(vIn.y(50:numel(vIn.y)-50));
 
-if abs(VMax) > abs(VMin) && tTiming == 0
+if ~isempty(VMax) && ~isempty(VMin) && abs(VMax) > abs(VMin) && tTiming == 0
     vIn.y = resample(vIn.y,p,q);
     oldPulse = resample(oldPulse,p,q);
     %vIn.y = resample(vIn.y,p,q);
     
-else
+elseif ~isempty(VMax) && ~isempty(VMin)
     VMax = VMin;
     VMaxIndex = VMinIndex;
+    
+else
+    trapezoidalPlateauAverage = 0;
+    vOut = [];
+    noGood = true;
+    return;
     
 end
 
@@ -1472,26 +1478,33 @@ vOut = conv(vIn.y(50:numel(vIn.y)-50),squarePulse);
         
         %if err <= 1E-6
         
+        %p = vIn.y(round(16.25E-6/Ts+3):round(35E-6/Ts)) + 70;
+        
+        %plot(p)
         p = vIn.y(round(10E-6/Ts):round(35E-6/Ts));
-        %{
-        p = p(350:2000);
-        net = evalin('base','net4');
-        pMean = evalin('base','ps1Mean');
-        pStd = evalin('base','ps1Std');
-        out = pStd*(predict(net, (p - pMean)/pStd, 'ExecutionEnvironment', 'gpu')) + pMean;
+        size(p)
+        %p = p(400:2000);
+        %net = evalin('base','net4');
         
-        plot([p out])
-        baseline = 0;%mean(out(1:50));
-        out = out - baseline;
+        pM = evalin('base','ps1Mean');
+        pS = evalin('base','ps1Std');
+        %out = (predict(net, , 'ExecutionEnvironment', 'gpu'));
+        
+        %plot([(p - pM)/pS])
+        %baseline = 0;%mean(out(1:50));
+        %out = out - baseline;
         %}
-        p = p(350:1750);
+        p = p(251:2000);
         net = evalin('base','net4');
-        spec = spectrogram(p, 100, 'yaxis');
-        rispec = horzcat(real(spec(1:70,:)), imag(spec(1:70,:)));
+        %spec = spectrogram(p, 100, 'yaxis');
+        %rispec = horzcat(real(spec(1:70,:)), imag(spec(1:70,:)));
         
-        out = predict(net, rispec, 'ExecutionEnvironment', 'gpu');
-        plot([p out])
-        trapezoidalPlateauAverage = (max(smooth(out,25,'moving')))*100
+        out = predict(net, (p - pM)/pS, 'ExecutionEnvironment', 'gpu');
+        
+        out = out - mean(out(1:200));
+        
+        plot([(p - pM)/pS, out])
+        trapezoidalPlateauAverage = (max(smooth(out,25,'moving')))  
         %trapezoidalPlateauAverage = (max(aF(1:numel(aF)-10))*100 + max(aF2(1:numel(aF2)-10))*100 + ...
         %    max(aF3(1:numel(aF3)-10))*100)/3;% - mean(vIn.y(round(10E-6/Ts):round(10E-6/Ts)+400))*100;% - mean(a(100:400))*100;
         vOut = out;
@@ -1569,7 +1582,7 @@ else
     vOut = [];
     
 end
-
+%{
 catch
     trapezoidalPlateauAverage = 0;
     vOut = [];
@@ -1577,5 +1590,5 @@ catch
     'trapezoidal filter error'
     
 end
-
+%}
 end

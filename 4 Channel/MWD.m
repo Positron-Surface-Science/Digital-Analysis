@@ -191,7 +191,8 @@ try
             %tau = -1/p(1);
             
             if n > round(offset/T)%&& n <= maxIndex + endLinear%-1/p(1); %65145.59927*p/q;%
-                tau = 67545.59927*p/q;%-1/p(1);%-1/(5*p(1)*n^4 + 4*p(2)*n^3 + 3*p(3)*n^2 + 2*p(4)*n + p(5));%-1/(4*p(1)*n^3 + 3*p(2)*n^2 + 2*p(3)*n + p(4));%-1/(3*p(1)*n^2 + 2*p(2)*n + p(3));%-1/(7*p(1)*n^6 + 6*p(2)*n^5 + 5*p(3)*n^4 + 4*p(4)*n^3 + 3*p(5)*n^2 + 2*p(6)*n + p(7));
+                tau = 5000; 
+                %tau = 67545.59927*p/q;%-1/p(1);%-1/(5*p(1)*n^4 + 4*p(2)*n^3 + 3*p(3)*n^2 + 2*p(4)*n + p(5));%-1/(4*p(1)*n^3 + 3*p(2)*n^2 + 2*p(3)*n + p(4));%-1/(3*p(1)*n^2 + 2*p(2)*n + p(3));%-1/(7*p(1)*n^6 + 6*p(2)*n^5 + 5*p(3)*n^4 + 4*p(4)*n^3 + 3*p(5)*n^2 + 2*p(6)*n + p(7));
                 pulseDeconv.y(n) = pulseDeconv.y(n-1) + unNew(n) - unNew(n-1) + unNew(n-1)/tau;
                 
             %elseif n > maxIndex + endLinear
@@ -379,7 +380,7 @@ try
         assignin('base','a',a);
         %}
         
-        baseline = mean(pulseIn.y(round((offset1-999E-9)/T):round((offset1-500E-9)/T)));
+        baseline = mean(pulseIn.y(round((offset1-1000E-9)/T):round((offset1-250E-9)/T)));
         %{
         x = baseline;
         y0 = 0.00661;
@@ -597,16 +598,16 @@ try
         
         if plottingOn3 == 1
             
-            bin3Size = (7/4096);
+            bin3Size = ((1.1 - 0.9)/2048);
             binSize = 0.0001;
             
-            whichBinGe = floor(amp/bin3Size);
+            whichBinGe = floor((amp - 0.9)/bin3Size);
             whichBinBL = floor((baseline+0.004)/binSize);
             assignin('base','whichBinGe',whichBinGe);
             assignin('base','whichBinBL',whichBinBL);
             
             if whichBinGe > 0 && whichBinBL > 0 && whichBinBL <= 200 ...
-                    && whichBinGe <= 4096
+                    && whichBinGe <= 2048
                 
                 evalin('base','geVsBL(whichBinGe,whichBinBL) = geVsBL(whichBinGe,whichBinBL) + 1;');
                 

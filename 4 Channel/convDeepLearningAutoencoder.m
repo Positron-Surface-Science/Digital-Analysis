@@ -1,9 +1,6 @@
-numFeatures = length(ps1(:,1));
-numHiddenUnits1 = 50;
-numHiddenUnits2 = 100;
-numResponses1 = 500;
-numResponses2 = 250;
-numResponses3 = length(ps2(:,1));
+numFeatures = length(cData1{:,1});
+numHiddenUnits1 = 500;
+numResponses = length(cData1{:,1});
 
 layers = [ ...
     
@@ -11,10 +8,10 @@ layers = [ ...
     sequenceFoldingLayer('Name', 'fold')
     
     % First Convolution
-    %convolution2dLayer([10 1], 8, 'Name', 'conv1', 'NumChannels', 1, 'Stride', 10, 'Bias', zeros(1, 1, 8), 'BiasLearnRateFactor', 0)
-    %batchNormalizationLayer('Name', 'bn1', 'Offset', zeros(1, 1, 8), 'OffsetLearnRateFactor', 0)
-    %reluLayer('Name', 'relu1')
-    %maxPooling2dLayer([5 1], 'Name', 'mpling1', 'Stride', 5)
+    convolution2dLayer([10 1], 16, 'Name', 'conv1', 'NumChannels', 1, 'Stride', 10)
+    batchNormalizationLayer('Name', 'bn1')
+    tanhLayer('Name', 'tanh1')
+    maxPooling2dLayer([5 1], 'Name', 'mpling1', 'Stride', 5)
 
     % Second Convolution
     %convolution2dLayer([5 1], 64, 'Name', 'conv2', 'NumChannels', 32, 'Stride', 3)
@@ -29,12 +26,12 @@ layers = [ ...
     %maxPooling2dLayer([2 1], 'Name', 'mpling3', 'Stride', 1)
     
     % Flatten Layer
-    %flattenLayer('Name', 'flatten1')
+    flattenLayer('Name', 'flatten1')
     
     % Fully Connected Layer
-    fullyConnectedLayer(numHiddenUnits1, 'Name', 'fc2', 'Bias', zeros(50, 1), 'BiasLearnRateFactor', 0)
+    fullyConnectedLayer(numHiddenUnits1, 'Name', 'fc2')
     dropoutLayer(0.1, 'Name', 'dpo1')
-    reluLayer('Name', 'relu4')
+    tanhLayer('Name', 'tanh2')
     
     % First Upsampling
     %transposedConv2dLayer([3 1], 128, 'Name', 'tconv1', 'Stride', 1)
@@ -54,14 +51,14 @@ layers = [ ...
     % Second Flatten Layer
     flattenLayer('Name', 'flatten2')
     
-    fullyConnectedLayer(numResponses3, 'Name', 'fc3', 'Bias', zeros(numResponses3, 1), 'BiasLearnRateFactor', 0)
+    fullyConnectedLayer(numResponses, 'Name', 'fc3')
     %dropoutLayer(0.1, 'Name', 'dpo1')
     
     regressionLayer('Name', 'rl')];
 
 
 
-maxEpochs = 100;
+maxEpochs = 1000;
 miniBatchSize = 256;
 
 %sLayer1 = skipLayer(128,4,64,'1');
