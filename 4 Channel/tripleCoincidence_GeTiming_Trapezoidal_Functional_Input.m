@@ -69,16 +69,16 @@ for n=iIn:iIn+9
                 %ggc = 1;
                 %timingTypeIn(c) = 0;
                 timingTypeChanged = true;
-                'ANN ACTIVE FOR TIMING'
+                'ANN ACTIVE FOR TIMING';
                 
             elseif TypeIn(c) == 3 && shapingTypeIn(c) == 0 && timingTypeIn(c) ~= 0
                 ANN(c) = 0;
-                'ANN ACTIVE FOR SHAPING'
+                'ANN ACTIVE FOR SHAPING';
                 
             else
                 ANN(c) = 0;
                 %activeNeuron = 0;
-                'ANN NOT ACTIVE'
+                'ANN NOT ACTIVE';
                 ELETMatrix = [0 0];
             end
             %s
@@ -205,7 +205,7 @@ for n=iIn:iIn+9
                 tCounter = 1;
                 
                 while noFile == true && noFileCounter <= 7 && tCounter <= 10
-                    'No File Loop'
+                    'No File Loop';
                     try
                         if isempty(t)
                             pulse{c}(s) = waveform.ReadLeCroyBinaryWaveform(fileName);
@@ -309,9 +309,9 @@ for n=iIn:iIn+9
             
             try
                 if BPFSwitch == '1'
-                    %[pulse{c}(s).y,dataFilter,baseline] = bpfilter(pulse{c}(s),c,FFTIn,dataFilter);
-                    %baseline = mean(pulse{c}(s).y(round((offset-999E-9)/T):round((offset-500E-9)/T)));
-                    %pulse{c}(s).y = pulse{c}(s).y - baseline;
+                    [pulse{c}(s).y,dataFilter,baseline] = bpfilter(pulse{c}(s),c,FFTIn,dataFilter);
+                    baseline = mean(pulse{c}(s).y(round((offset-999E-9)/T):round((offset-500E-9)/T)));
+                    pulse{c}(s).y = pulse{c}(s).y - baseline;
                     
                 else
                     if isempty(k)
@@ -324,15 +324,20 @@ for n=iIn:iIn+9
                 end
                 
             catch
-                'bpf error'
+                'bpf error';
             end
             
-            if c==1 && false
+            if c == 1 && false
                 plot(pulse{c}(s).y(45:500))
                 assignin('base','trace',pulse{c}(s).y(45:500));
                 evalin('base','traces = horzcat(traces,trace);');
                 %assignin('base','p',pulse{c}(s).y(18626:19063)/max(pulse{c}(s).y(18626:19063)));
                 %assignin('base','xTrace',pulse{c}(s).x(18626:19063));
+            end
+            
+            if c == 2
+                netTrace2 = pulse{2}(s).y(45:500);
+                
             end
             %{
             if TypeIn(1) == 4 && TypeIn(c) == 3
@@ -565,9 +570,9 @@ for n=iIn:iIn+9
                 
                 %'ELET PARAMETERS'
                 %ELETParam = best(1:2,activeNeuron);
-                %ParameterMatrix = evalin('base','best2;');
+                ParameterMatrix = evalin('base','best2;');
                 %ELETParam
-                'ELET PARAM'
+                'ELET PARAM';
                 ELETMatrix = ELETParam; %ParameterMatrix(1:2,activeNeuron);
                 ELETMatrix
                 %best(1:2,activeNeuron);
@@ -812,27 +817,27 @@ for n=iIn:iIn+9
                 numPeaks = numel(crossTime{s}.mcp)
                 
                 timeOfFlight{s} = NaN(1,numPeaks);
-                'NO GOOD'
-                noGood(:,s)
-                noGoodS(:,s)
+                'NO GOOD';
+                noGood(:,s);
+                noGoodS(:,s);
                 if sum(noGood(:,s)) == 0 && sum(noGoodS(:,s)) == 0
                     
                     for p=1:numPeaks
-                        'ToF CALCULATION'
+                        'ToF CALCULATION';
                         timeOfFlight{s}(p) = (crossTime{s}.mcp(p) - crossTime{s}.gamma(1));
                         
-                        'mcp 1'
-                        crossTime{s}.mcp(p)
-                        'gamma 1'
-                        crossTime{s}.gamma(1)
+                        'mcp 1';
+                        crossTime{s}.mcp(p);
+                        'gamma 1';
+                        crossTime{s}.gamma(1);
                         
                         if (sum(ANN) == 1 && isempty(activeNeuron) == 0 && activeNeuron ~= 0)
-                            'SUBTRACTING MULTI'
+                            'SUBTRACTING MULTI';
                             timeOfFlight{s}(p) = timeOfFlight{s}(p) - ParameterMatrix(3,activeNeuron);
                             
                         elseif sum(ANN) ~= 0 && (isempty(activeNeuron) || activeNeuron == 0)
                             timeOfFlight(s) = NaN;
-                            'multi-stop neuron error'
+                            'multi-stop neuron error';
                             
                         end
                         
@@ -865,12 +870,12 @@ for n=iIn:iIn+9
                 noGoodS(:,s)
                 if sum(noGood(:,s)) == 0 && sum(noGoodS(:,s)) == 0 && exact2 == 1
                     'prior calculation'
-                    timeOfFlight(s) = (crossTime{s}.mcp(1) - crossTime{s}.gamma(1));
+                    timeOfFlight(s) = (crossTime{s}.mcp(1) - crossTime{s}.gamma(1))
                     
-                    'mcp 2'
-                    crossTime{s}.mcp(1)
-                    'gamma 2'
-                    crossTime{s}.gamma(1)
+                    'mcp 2';
+                    crossTime{s}.mcp(1);
+                    'gamma 2';
+                    crossTime{s}.gamma(1);
                     %crossTime{s}.gamma(1)
                     %
                     %sum(ANN)
@@ -880,12 +885,25 @@ for n=iIn:iIn+9
                     if (sum(ANN) == 1 && ~isempty(activeNeuron) && activeNeuron ~= 0)% && ...
                             %VoutMax{2}(s) >= 5.94 && VoutMax{2}(s) <= 7.23%6.713%best(4,activeNeuron) <= 10E-9 && VoutMax{2}(s) >= 6.2 && VoutMax{2}(s) <= 7.0 6.2
                             
-                        'SUBTRACTING'
+                        'SUBTRACTING';
                         timeOfFlight(s) = timeOfFlight(s);% - ParameterMatrix(3,activeNeuron) %ELETMatrix(activeNeuron,3);
                         %{
                         assignin('base','netTrace',netTrace);
-                        evalin('base','input = horzcat(input,netTrace);');
-                        evalin('base','target = horzcat(target,best11(:,activeNeuron));');
+                        assignin('base','netTrace2',netTrace2);
+                        
+                        if timeOfFlight(s) <= -1E-10
+                            evalin('base','lowPeak = horzcat(lowPeak,netTrace);');
+                            evalin('base','lowPeak2 = horzcat(lowPeak2,netTrace2);');
+                            
+                        elseif timeOfFlight(s) > -1E-10 && timeOfFlight(s) < 1E-10
+                            evalin('base','midPeak = horzcat(midPeak,netTrace);');
+                            evalin('base','midPeak2 = horzcat(midPeak2,netTrace2);');
+                            
+                        elseif timeOfFlight(s) >= 1E-10
+                            evalin('base','highPeak = horzcat(highPeak,netTrace);');
+                            evalin('base','highPeak2 = horzcat(highPeak2,netTrace2);');
+                            
+                        end
                         %}
                         if true
                             %try

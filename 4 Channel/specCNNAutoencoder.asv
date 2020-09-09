@@ -1,5 +1,5 @@
-numFeatures1 = 2301;
-numFeatures2 = 1;
+numFeatures1 = 81;
+numFeatures2 = 1532;
 numHiddenUnits1 = 1000;
 numResponses = 2301;
 
@@ -9,16 +9,16 @@ layers = [ ...
     sequenceFoldingLayer('Name', 'fold')
     
     % First Convolution
-    convolution2dLayer([3 3], 8, 'Name', 'conv1', 'NumChannels', 1, 'Stride', 1, 'Padding', 2)
+    convolution2dLayer([4 4], 8, 'Name', 'conv1', 'NumChannels', 1, 'Stride', 1, 'Padding', 'same')
     batchNormalizationLayer('Name', 'bn1')
     leakyReluLayer('Name', 'relu1')
-    maxPooling2dLayer([2 2], 'Name', 'mpling1', 'Stride', 1)
+    maxPooling2dLayer([4 4], 'Name', 'mpling1', 'Stride', 1)
 
     % Second Convolution
-    convolution2dLayer([5 5], 16, 'Name', 'conv2', 'NumChannels', 8, 'Stride', 1, 'Padding', 2)
+    convolution2dLayer([4 2], 32, 'Name', 'conv2', 'NumChannels', 16, 'Stride', 1, 'Padding', [3 2])
     batchNormalizationLayer('Name', 'bn2')
     leakyReluLayer('Name', 'relu2')
-    maxPooling2dLayer([2 2], 'Name', 'mpling2', 'Stride', 1)
+    maxPooling2dLayer([3 3], 'Name', 'mpling2', 'Stride', 1)
     
     % Third Convolution
     %convolution2dLayer([3 1], 128, 'Name', 'conv3', 'NumChannels', 64, 'Stride', 1)
@@ -32,9 +32,9 @@ layers = [ ...
     %additionLayer(2, 'Name', 'add1')
     
     % Fully Connected Layer
-    fullyConnectedLayer(numHiddenUnits1, 'Name', 'fc2')
-    dropoutLayer(0.1, 'Name', 'dpo1')
-    leakyReluLayer('Name', 'relu4')
+    %fullyConnectedLayer(numHiddenUnits1, 'Name', 'fc2')
+    %dropoutLayer(0.1, 'Name', 'dpo1')
+    %tanhLayer('Name', 'relu4')
     
     % First Upsampling
     %transposedConv2dLayer([3 1], 128, 'Name', 'tconv1', 'Stride', 1)
@@ -54,10 +54,12 @@ layers = [ ...
     flattenLayer('Name', 'flatten2')
     
     fullyConnectedLayer(numResponses, 'Name', 'fc3')
-    %leakyReluLayer('Name', 'tanh1')
-    %dropoutLayer(0.1, 'Name', 'dpo1')
+    leakyReluLayer('Name', 'tanh1')
+    dropoutLayer(0.1, 'Name', 'dpo1')
     
     regressionLayer('Name', 'rl')];
+
+
 
 maxEpochs = 100;
 miniBatchSize = 256;
@@ -81,7 +83,7 @@ lgraph = connectLayers(lgraph, 'fold/miniBatchSize', 'unfold/miniBatchSize');
 options = trainingOptions('adam', ...
     'MaxEpochs',maxEpochs, ...
     'MiniBatchSize',miniBatchSize, ...
-    'InitialLearnRate',0.0001, ...
+    'InitialLearnRate',0.01, ...
     'LearnRateSchedule','piecewise', ...
     'LearnRateDropFactor',0.5, ...
     'LearnRateDropPeriod',2, ...
@@ -94,7 +96,7 @@ options = trainingOptions('adam', ...
 
 %'L2Regularization',0.1, ...
 
-net4 = trainNetwork(cData, cResponse, lgraph, options);
+net4 = trainNetwork(data, response, lgraph, options);
 
 %{
 function layers = convolutionalUnit(numF, stride, numC, tag)

@@ -804,8 +804,8 @@ vOut = conv(vIn.y(50:numel(vIn.y)-50),squarePulse);
         %figure;
         %plot(vOut);
         %}
-        
-        vOut = abs(smooth(diff(vIn.y),L,'moving'));
+        plot(vIn.y)
+        vOut = vIn.y;%abs(smooth(diff(vIn.y),L,'moving'));
         
         for l=1:10
             vOut = smooth(vOut(100:numel(vOut)-100),L,'moving');
@@ -1484,27 +1484,33 @@ vOut = conv(vIn.y(50:numel(vIn.y)-50),squarePulse);
         p = vIn.y(round(10E-6/Ts):round(35E-6/Ts));
         size(p)
         %p = p(400:2000);
-        %net = evalin('base','net4');
+        net = evalin('base','net4');
         
-        pM = evalin('base','ps1Mean');
-        pS = evalin('base','ps1Std');
+        %pM = evalin('base','ps1Mean');
+        %pS = evalin('base','ps1Std');
         %out = (predict(net, , 'ExecutionEnvironment', 'gpu'));
         
         %plot([(p - pM)/pS])
         %baseline = 0;%mean(out(1:50));
         %out = out - baseline;
         %}
-        p = p(251:2000);
+        fs = 2.5E9;
+        range1 = 200;
+        range2 = 2500;
+        specRange1 = 10;
+        specRange2 = 90;
+        
+        p = p(range1:range2);
         net = evalin('base','net4');
-        %spec = spectrogram(p, 100, 'yaxis');
-        %rispec = horzcat(real(spec(1:70,:)), imag(spec(1:70,:)));
+        spec = spectrogram(p, 5, 2, 250, fs, 'yaxis');
+        rispec = horzcat(single(real(spec(specRange1:specRange2,:))), single(imag(spec(specRange1:specRange2,:))));
         
-        out = predict(net, (p - pM)/pS, 'ExecutionEnvironment', 'gpu');
+        out = predict(net, rispec*1E4, 'ExecutionEnvironment', 'cpu');
         
-        out = out - mean(out(1:200));
+        %out = out - mean(out(1:200));
         
-        plot([(p - pM)/pS, out])
-        trapezoidalPlateauAverage = (max(smooth(out,25,'moving')))  
+        plot([p*1E4, out])
+        trapezoidalPlateauAverage = (max(smooth(out/(1E2),25,'moving')))  
         %trapezoidalPlateauAverage = (max(aF(1:numel(aF)-10))*100 + max(aF2(1:numel(aF2)-10))*100 + ...
         %    max(aF3(1:numel(aF3)-10))*100)/3;% - mean(vIn.y(round(10E-6/Ts):round(10E-6/Ts)+400))*100;% - mean(a(100:400))*100;
         vOut = out;

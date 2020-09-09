@@ -9,11 +9,11 @@ xToF = linspace(-1E-9,1.5E-9,256)';
     x0 = [];
     
 
-for n=1:49
+for n=1:64
     
     %if exact(n) == 1
         
-        for i=1:42
+        for i=1:15
             
             if allNeurons.eletParameters(1,i) ~= 0
                 
@@ -26,7 +26,7 @@ for n=1:49
                 
                 if max(hToF) < sum(hToF)
                     
-                    %try
+                    try
                         
                         [~,second] = max(hToF);
                         
@@ -58,14 +58,14 @@ for n=1:49
                         %}
                         %fwhm(i,n) = std(nVector);
                         %x0(i,n) = mean(nVector);
-                        %{
+                        
                     catch
                         fwhm(i,n) = 1;
                         amplitude(i,n) = 0;
                         'try error 1'
                         
                     end
-                    %}
+                    
                 end
                 
             end
