@@ -1,15 +1,31 @@
-function [crossTime,noGood,numberOfPeaks,riseTime] = paes(timingIn,TypeIn,c,...
+function [crossTime,noGood,numberOfPeaks,riseTime] = paes_unedited(timingIn,TypeIn,c,...
     multiStopIn,multiStopConditionsIn,numPeaks,pulseIn,RTFLIn,RTFUpIn,ELETMatrix,...
-    DiscriminationVector,neuron,activeNeuron,ANN,ggc)
+    DiscriminationVector,neuron,activeNeuron,ANN,ggc,ELETUpper,ELETLower,t)
 
 % --------------------------------------------------------------------------
 % 'PAES' function which calculates the crossing "pick-off" time of detector
 % pulses.
 % --------------------------------------------------------------------------
-
+%pulseIn.y = single(pulseIn.y);
+%pulseIn.x = single(pulseIn.x);
 pulseIny = pulseIn.y;
 pulseInx = pulseIn.x;
-dN = pulseIn.desc.Ts; % Time per channel
+tempOn = false;
+
+if ~isempty(t) && TypeIn == 1
+    TypeIn = 3;
+    tempOn = true;
+    
+end
+
+try
+    dN = pulseIn.desc.Ts; % Time per channel
+    
+catch
+    dN = 1/(5E9);
+    
+end
+
 riseTime = 1;
 foundFraction = [];
 foundFraction1 = [];
@@ -23,14 +39,21 @@ foundFrac2 = 1;
 goodRiseTime = false;
 findingNoise = false;
 neuronTemp = neuron;
-a = fieldnames(DiscriminationVector);
-exact = getfield(DiscriminationVector,a{1});
+scintPulse = 0;
+gggc = 0;
+numberOfPeaks = 1;
+rejecting = false;
+
+%ELETMatrix = ELETMatrix';
+%a = fieldnames(DiscriminationVector);
+%exact = getfield(DiscriminationVector,a{1});
 % ----------------------------------
-exact(exact == 0) = 1;
+%exact(exact == 0) = 1;
 % ----------------------------------
 
 if TypeIn == 1 && ggc == 0
     neuronTemp = 0;
+    
     % Considering if a pulse is negative- or positive-going.
     if max(pulseIny) < abs(min(pulseIny))
         pulseIny = -pulseIny;
@@ -40,18 +63,18 @@ if TypeIn == 1 && ggc == 0
     lastwarn('');
     % Set to detect peaks 15 ns apart (15*10.^(-9)/dN)
     [VMin{c},VMinIndex{c}] = findpeaks(pulseIny(50:numel(pulseIny)-50),...
-        'MinPeakDistance',round((5*10.^(-9))/dN), ...
-        'MinPeakHeight',1*10.^(-3),'MinPeakProminence',0.8*10.^(-3), ...
-        'MinPeakWidth',round((5*10.^(-9))/dN),'WidthReference', ...
-        'halfheight','MaxPeakWidth',round((40*10.^(-9)/dN)));
+        'MinPeakDistance',round((14*10.^(-9))/dN), ...
+        'MinPeakHeight',1*10.^(-3),'MinPeakProminence',0.25*10.^(-3), ...
+        'MinPeakWidth',round((10*10.^(-9))/dN),'WidthReference', ...
+        'halfheight','MaxPeakWidth',round((75*10.^(-9)/dN)));
     
     [warnMsg, ~] = lastwarn;
     VMinIndex{c} = VMinIndex{c} + 50;
     numPeaks = numel(VMinIndex{c});
     numberOfPeaks = numPeaks;
     crossTime = NaN(numPeaks,1);
-    'numPeaks'
-    numPeaks
+    'numPeaks';
+    numPeaks;
     
     %plot(pulseIny(VMinIndex{c}-50:VMinIndex{c}+50))
     
@@ -69,13 +92,13 @@ if TypeIn == 1 && ggc == 0
     end
     
     if multiStopIn == '1' && multiStopConditionsIn == 7 && numPeaks == 2
-        multiStopConditionsIn = 3;
+        %multiStopConditionsIn = 3;
         
     elseif multiStopIn == '1' && multiStopConditionsIn == 7 && numPeaks == 3
         multiStopConditionsIn = 3;
         
     elseif multiStopIn == '1' && multiStopConditionsIn == 6
-        multiStopConditionsIn = 2
+        multiStopConditionsIn = 2;
         
     end
    
@@ -85,6 +108,26 @@ if TypeIn == 1 && ggc == 0
         
     end
     
+    %{
+     if numPeaks == 3
+        TypeIn == 1
+        multiStopIn == '1'
+        numel(warnMsg) > 0
+        multiStopConditionsIn ~= 4
+        multiStopConditionsIn ~= 5
+        'NUMPEAKS'
+        multiStopConditionsIn
+        numPeaks
+        multiStopConditionsIn ~= numPeaks
+        (multiStopConditionsIn == 5 && (numPeaks == 1 || numPeaks == 0))
+        numPeaks > 5
+        
+        rejecting = true;
+        
+        pause(15)
+        
+    end
+    %}
     %if numPeaks == 0
         %figure
      %   plot(pulseIn.y)
@@ -107,22 +150,31 @@ elseif TypeIn == 1 && ggc == 1
     warnMsg = [];
     crossTime = NaN;
     numPeaks = 1;
-    
+    %plot(pulseIny)
     
 elseif TypeIn ~= 1
     'VMin';
-    [VMin{c},VMinIndex{c}] = max(pulseIny(50:numel(pulseIny)-50));
-    [VMin2{c},VMinIndex2{c}] = min(pulseIny(50:numel(pulseIny)-50));
+       %{         
+    [VMin{c},VMinIndex{c}] = max(earlyOne(10:numel(earlyOne)-50));
+    [VMin2{c},VMinIndex2{c}] = min(earlyOne(10:numel()-50));
+         %}
+               
+    [VMin{c},VMinIndex{c}] = max(pulseIny(10:numel(pulseIny)-50));
+    [VMin2{c},VMinIndex2{c}] = min(pulseIny(10:numel(pulseIny)-50));
+    
+    %pause(2)
     
     % Considering if a pulse is negative- or positive-going.
     if abs(VMin2{c}) > abs(VMin{c})
         VMin{c} = abs(VMin2{c});
         VMinIndex{c} = VMinIndex2{c};
         pulseIny = abs(pulseIny);
+        scintPulse = 1;
         
     end
     
-    VMinIndex{c} = VMinIndex{c} + 50;
+    %VMin{c} = (VMin{c} + mean(pulseIny(VMinIndex{c}-3:VMinIndex{c}+3)))/2;
+    VMinIndex{c} = VMinIndex{c} + 10;
     warnMsg = [];
     crossTime = NaN;
     numPeaks = 1;
@@ -148,7 +200,7 @@ for s=1:numberOfPeaks
         %isempty(VMinIndex{c})
     if isempty(activeNeuron) ||  ...
             isempty(VMinIndex{c}) || ...
-            VMinIndex{c}(1) - 100 <= 0
+            VMinIndex{c}(1) - 10 <= 0
         crossTime(s) = NaN;
         numPeaks = 0;
         'neuron error 1'
@@ -156,7 +208,7 @@ for s=1:numberOfPeaks
     
     end
         
-    if TypeIn == 3 && ANN == 1 && activeNeuron == 0
+    if TypeIn == 3 && ANN(c) == 1 && activeNeuron == 0
         crossTime(s) = NaN;
         numPeaks = 0;
         'neuron error 2'
@@ -187,15 +239,19 @@ for s=1:numberOfPeaks
     %s
     % Integrating peak and region before peak to reduce periodic noise
     % pulses.
-    if (TypeIn == 1 && ggc == 0) && VMinIndex{c}(s)-round((100*10.^(-9)/dN)) > 0
-        integration = trapz(pulseIny(VMinIndex{c}(s)-round((100*10.^(-9)/dN)) ...
+    if (TypeIn == 1 && ggc == 0) && VMinIndex{c}(s)-round((50*10.^(-9)/dN)) > 0
+        
+        integration = trapz(pulseIny(VMinIndex{c}(s)-round((50*10.^(-9)/dN)) ...
             :VMinIndex{c}(s)));
+        
     elseif TypeIn == 1
         integration = 0;
         %'TypeIn 1'
+        
     end
     
-    if (TypeIn == 1 && ggc == 0) && integration < 0.005
+    % WAS integration < 0.005
+    if (TypeIn == 1 && ggc == 0) && (integration < 0.005) % || integration >= 0.01
        numPeaks = numPeaks - 1;
        crossTime(s) = NaN;
        'integration'
@@ -211,27 +267,23 @@ for s=1:numberOfPeaks
         
     else
         % Fraction for CFD, ELET, and RTF.
-        VMinFraction = (0.42*VMin{c}(s));
-        VMinFraction1 = (0.07*VMin{c}(s));
-        VMinFraction2 = (0.09*VMin{c}(s));
+        VMinFraction = 0.01*(ELETLower(c)*VMin{c}(s));
+        VMinFraction1 = 0.01*(ELETLower(c)*VMin{c}(s));
+        VMinFraction2 = 0.01*(ELETUpper(c)*VMin{c}(s));
         
-        if ggc == 1 && TypeIn == 1
-            VMinFraction1 = (0.10*VMin{c}(s));
-            VMinFraction2 = (0.20*VMin{c}(s));
+        if ANN(c) == 1
+            %assignin('base','ELETMatrix',ELETMatrix);
+            VMinFraction1 = 0.01*(ELETMatrix(1)*VMin{c}(s));
+            VMinFraction2 = 0.01*(ELETMatrix(2)*VMin{c}(s));
             
-        elseif TypeIn == 3 && ANN == 1
-            VMinFraction1 = (ELETMatrix(activeNeuron,1)*0.01*VMin{c}(s));
-            VMinFraction2 = (ELETMatrix(activeNeuron,2)*0.01*VMin{c}(s));
-            VMinFraction = (((ELETMatrix(activeNeuron,1)+ELETMatrix(activeNeuron,2)))/2)*0.01*VMin{c}(s);
-            'ELET MATRIX 1'
-            ELETMatrix(activeNeuron,1);
-            ELETMatrix(activeNeuron,2);
+            if ELETMatrix(1) == ELETMatrix(2)
+                cfdANN = true;
+                VMinFraction = 0.01*(ELETMatrix(1)*VMin{c}(s));
+                
+            end
+            
             %VMinFraction1 = (0.07*VMin{c}(s));
             %VMinFraction2 = (0.09*VMin{c}(s));
-            
-        elseif ggc == 0 && TypeIn == 1
-            VMinFraction1 = (0.1*VMin{c}(s));
-            VMinFraction2 = (0.3*VMin{c}(s));
             
         end
         
@@ -269,7 +321,7 @@ for s=1:numberOfPeaks
     % fraction.
     % ----------------------------------------
     
-    elseif  (timingIn == 1 || timingIn == 2) && T ~= 0 && VMinIndex{c}(s) > round(700E-9/dN)
+    elseif  (timingIn == 1 || timingIn == 2 || (timingIn == 4 && cfdANN == true)) && T ~= 0 && VMinIndex{c}(s) > 1
         
         %{
         stop = 0;
@@ -290,32 +342,102 @@ for s=1:numberOfPeaks
         end
         %}
         
-        if TypeIn == 1 && ggc == 0
-            [~, foundFrac] = min(abs(pulseIny(VMinIndex{c}(s)- ...
-                round(50*10.^(-9)/dN):VMinIndex{c}(s)) - VMinFraction));
+        if TypeIn == 1 && ggc == 0 && scintPulse == 0 && tempOn == false
+            'IF';
+            if s >= 2 && pulseInx(VMinIndex{c}(s)) - pulseInx(VMinIndex{c}(s-1)) ...
+                    <= 50*10.^(-9)
+                
+                [~, foundFrac] = min(abs(pulseIny(VMinIndex{c}(s-1) ...
+                    :VMinIndex{c}(s)) - VMinFraction));
+                
+                foundFrac = foundFrac + VMinIndex{c}(s-1);
+                foundFraction = horzcat(foundFraction,foundFrac);
+                
+            else
+                
+                [~, foundFrac] = min(abs(pulseIny(VMinIndex{c}(s)- ...
+                    round(50*10.^(-9)/dN):VMinIndex{c}(s)) - VMinFraction));
+                
+                foundFrac = foundFrac + (VMinIndex{c}(s) - round(50*10.^(-9)/dN));
+                foundFraction = horzcat(foundFraction,foundFrac);
+                
+            end
+            
             %{
             [~, foundFrac] = min(abs(pulseIny(VMinIndex{c}(s-1)+ ...
                 round(10*10.^(-9)/dN):VMinIndex{c}(s)) - VMinFraction));
                 foundFrac = foundFrac + VMinIndex{c}(s-1) + round(20*10.^(-9)/dN);
             %}
             %assignin('base','pulseIn',pulseIny(VMinIndex{c}(s-1)+round(10*10.^(-9)/dN):numel(pulseIny)));
-            foundFrac = foundFrac + (VMinIndex{c}(s) - round(50*10.^(-9)/dN));
-            %foundFraction = horzcat(foundFraction,foundFrac);
             
         else
-            [~, foundFrac] = min(abs(pulseIny(VMinIndex{c}(s)-round(700E-9/dN): ...
-                    VMinIndex{c}(s)) - VMinFraction));
-            foundFrac = foundFrac + (VMinIndex{c}(s) - round(700E-9/dN));
-            %foundFraction = horzcat(foundFraction,foundFrac);
+            'ELSE';
+            % WAS 700 ns
             
+            %try
+            
+            earlyOne = smooth(pulseIny(1: ...
+                VMinIndex{c}(s)), 5);
+            
+            leap = diff(smooth(diff(earlyOne), 5));
+            
+                [~, risingEdge] = max(leap(50:end-5));
+                
+                risingEdge = risingEdge + 45;
+                
+                %{
+                [~, midPulse] = min(abs(pulseIny(risingEdge: ...
+                    VMinIndex{c}(s)) - 0.25*VMin{c}(s)));
+                
+                midPulse = midPulse + risingEdge + 5;
+                %}
+                
+                %size(leap)
+                %size(pulseIny(1:VMinIndex{c}(s)))
+                
+                if tempOn == true
+                    %plot([leap pulseIny(1:VMinIndex{c}(s)-2)])
+                    
+                end
+                
+                %{
+                [~, foundFrac] = min(abs(pulseIny(VMinIndex{c}(s)-round(700E-9/dN): ...
+                    VMinIndex{c}(s)) - VMinFraction));
+                foundFrac = foundFrac + (VMinIndex{c}(s) - round(700E-9/dN));
+                %foundFraction = horzcat(foundFraction,foundFrac);
+                %}
+                
+                [~, foundFrac] = min(abs(pulseIny(risingEdge: ...
+                    VMinIndex{c}(s)) - VMinFraction));
+                
+                if tempOn == true
+                'FOUNDFRAC'
+                c
+                risingEdge
+                foundFrac
+                VMinIndex{c}(s)
+                [~,maximum] = max(pulseIny);
+                maximum
+                end
+                
+                foundFrac = foundFrac + risingEdge;
+                
+             %{   
+            catch
+                
+                [~, foundFrac] = min(abs(pulseIny(1: ...
+                    VMinIndex{c}(s)) - VMinFraction));
+                
+            end
+            %}
         end
         
     % ---------------------------------
     % ELET: finding channels corresponding to the two fractions.
     % ---------------------------------
     %activeNeuron
-    elseif (timingIn == 0) && T ~= 0 && ...
-            VMinIndex{c}(s) > round(900E-9/dN)% && activeNeuron == 0% ...
+    elseif (timingIn == 0 || timingIn == 4) && T ~= 0 && ...
+            VMinIndex{c}(s) > round(1E-9/dN)% && activeNeuron == 0% ...
             %|| exact(activeNeuron) == 1)
         
         %{
@@ -371,11 +493,138 @@ for s=1:numberOfPeaks
                 
             else
                 %}
-                [~, foundFrac1] = min(abs(pulseIny(VMinIndex{c}(s)-round(900E-9/dN): ...
+            if scintPulse == 1
+                'SCINT PULSE!!!!!!!'
+                try
+                    [~, foundFrac1] = min(abs(pulseIny(VMinIndex{c}(s)-round(100E-9/dN): ...
+                        VMinIndex{c}(s)) - VMinFraction1));
+                    [~, foundFrac2] = min(abs(pulseIny(VMinIndex{c}(s)-round(100E-9/dN): ...
+                        VMinIndex{c}(s)) - VMinFraction2));
+                    
+                    foundFrac1 = foundFrac1 + VMinIndex{c}(s) - round(100E-9/dN);
+                    foundFrac2 = foundFrac2 + VMinIndex{c}(s) - round(100E-9/dN);
+                    
+                catch
+                    [~, foundFrac1] = min(abs(pulseIny(1: ...
+                        VMinIndex{c}(s)) - VMinFraction1));
+                    [~, foundFrac2] = min(abs(pulseIny(1: ...
+                        VMinIndex{c}(s)) - VMinFraction2));
+                    
+                    %foundFrac1 = foundFrac1 + VMinIndex{c}(s) - round(10E-9/dN);
+                    %foundFrac2 = foundFrac2 + VMinIndex{c}(s) - round(10E-9/dN);
+                    
+                end
+                
+            else
+                
+                earlyOne = smooth(pulseIny(VMinIndex{c}(s)-round(5E-6/dN): ...
+                    VMinIndex{c}(s) + round(5E-6/dN)), 50);
+                
+                leap = diff(smooth(diff(earlyOne), 50));
+                
+                [~, risingEdge] = max(leap(200:end-200));
+                [~, turningEdge] = min(leap(200:end-200));
+                
+                
+                %plot(leap)
+                
+                
+                %leap = diff(smooth(diff(smooth(pulseIny(VMinIndex{c}(s) - round(1500E-9/dN): ...
+                %    VMinIndex{c}(s)), 100)), 100));
+                
+                %[~, risingEdge] = max(leap(200:end - 100));
+                
+                risingEdge = risingEdge + VMinIndex{c}(s) - round(5E-6/dN) + 200;
+                turningEdge = turningEdge + VMinIndex{c}(s) - round(5E-6/dN) + 200;
+                
+                
+                
+                [~, midPulse] = min(abs(pulseIny(risingEdge: ...
+                    turningEdge) - 0.20*VMin{c}(s)));
+                
+                midPulse = midPulse + risingEdge;
+                
+                
+               
+                %size(pulseIny)
+                %size(leap)
+                %plot(leap(200:end-100))
+                
+                %{
+                [fracVal1, foundFrac1] = min(abs(pulseIny(VMinIndex{c}(s)-round(700E-9/dN): ...
                     VMinIndex{c}(s)) - VMinFraction1));
-                [~, foundFrac2] = min(abs(pulseIny(VMinIndex{c}(s)-round(900E-9/dN): ...
+                [fracVal2, foundFrac2] = min(abs(pulseIny(VMinIndex{c}(s)-round(700E-9/dN): ...
                     VMinIndex{c}(s)) - VMinFraction2));
                 
+                foundFrac1 = foundFrac1 + VMinIndex{c}(s) - round(700E-9/dN);
+                foundFrac2 = foundFrac2 + VMinIndex{c}(s) - round(700E-9/dN);
+                %}
+                
+                [fracVal1, foundFrac1] = min(abs(pulseIny(risingEdge: ...
+                    midPulse) - VMinFraction1));
+                [fracVal2, foundFrac2] = min(abs(pulseIny(risingEdge: ...
+                    midPulse) - VMinFraction2));
+                
+                foundFrac1 = foundFrac1 + risingEdge;
+                foundFrac2 = foundFrac2 + risingEdge;
+                
+                %{
+                 'ASDFIF!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+                risingEdge
+                turningEdge
+                midPulse
+                VMinIndex{c}(s)
+                foundFrac1
+                foundFrac2
+                pause(5)
+                
+                
+                
+                fracVal1
+                VMinFraction1 + 0.25*VMinFraction1
+                fracVal2
+                fracVal1 
+                        foundFrac2
+                        foundFrac1
+                %}
+                if fracVal1 >= VMinFraction1 + 0.25*VMinFraction1 || fracVal2 < fracVal1 || ...
+                        foundFrac2 < foundFrac1
+                    'HERE'
+                    [fracVal1, foundFrac1] = min(abs(pulseIny(VMinIndex{c}(s) - round(5000E-9/dN): ...
+                        midPulse) - VMinFraction1));
+                    [fracVal1, foundFrac2] = min(abs(pulseIny(VMinIndex{c}(s) - round(5000E-9/dN): ...
+                        midPulse) - VMinFraction2));
+                    
+                    foundFrac1 = foundFrac1 + VMinIndex{c}(s) - round(5000E-9/dN);
+                    foundFrac2 = foundFrac2 + VMinIndex{c}(s) - round(5000E-9/dN);
+                    
+                    %{
+                    [~, foundFrac1] = min(abs(pulseIny(midPulse - round(100E-9/dN): ...
+                        midPulse) - VMinFraction1));
+                    [~, foundFrac2] = min(abs(pulseIny(midPulse - round(100E-9/dN): ...
+                        midPulse) - VMinFraction2));
+                    
+                    foundFrac1 = foundFrac1 + VMinIndex{c}(s) - midPulse;
+                    foundFrac2 = foundFrac2 + VMinIndex{c}(s) - midPulse;
+                    %}
+                        
+                end
+                
+                
+                if pulseInx(foundFrac2) - pulseInx(foundFrac1) > 500E-9 || ...
+                        foundFrac2 < foundFrac1 || ...
+                        fracVal1 >= VMinFraction1 + 0.25*VMinFraction1
+                    
+                    crossTime(s) = NaN;
+                    riseTime = 1;
+                    numPeaks = numPeaks - 1;
+                    'Bad ELET'
+                    continue;
+                    
+                end
+                
+            end
+            
                 %{
                 if foundFrac1 == foundFrac2
                 figure
@@ -383,9 +632,6 @@ for s=1:numberOfPeaks
                 pause(5)
                 end
                   %}
-                    
-                foundFrac1 = foundFrac1 + VMinIndex{c}(s) - round(900E-9/dN);
-                foundFrac2 = foundFrac2 + VMinIndex{c}(s) - round(900E-9/dN);
                 
                 %{
                 if c == 1
@@ -421,7 +667,7 @@ for s=1:numberOfPeaks
                 end
                 
             %end
-            
+          
         catch
             crossTime(s) = NaN;
             riseTime = 1;
@@ -516,10 +762,12 @@ for s=1:numberOfPeaks
     
     %{
     'TRUTHS'
+    foundFrac1
+    foundFrac2
     c
     (timingIn == 0 || timingIn == 2)
-    foundFrac1 > round(5E-9/dN)
-    foundFrac2 > round(5E-9/dN)
+    foundFrac1 > round(0.5E-9/dN)
+    foundFrac2 > round(0.5E-9/dN)
     count1 < 0.99*numel(pulseIny)
     count2 < 0.99*numel(pulseIny)
     foundFrac1 < 0.99*numel(pulseIny)
@@ -532,12 +780,23 @@ for s=1:numberOfPeaks
     %}
     
     % CFD pulseIn interpolation.
+    %{
+    'TRUTHS 2'
+    c
+    timingIn == 1 
+    timingIn == 2 
+    foundFrac > 1 
+    count < 0.99*numel(pulseIny) 
+    foundFrac < 0.99*numel(pulseIny) 
+    T ~= 0 
     
+    foundFrac
+    %}
     if (TypeIn ~= 1 && s > 1) || (ggc == 1 && TypeIn == 1 && s > 1)
         'TypeIn & s 2'
         break;
         
-    elseif (timingIn == 1 || timingIn == 2) && foundFrac > round(5*10.^(-9)/dN) ...
+    elseif (timingIn == 1 || timingIn == 2 || (timingIn == 4 && cfdANN == true)) && foundFrac > 1 ...
             && count < 0.99*numel(pulseIny) && foundFrac < 0.99*numel(pulseIny) && ...
             T ~= 0
         
@@ -574,8 +833,8 @@ for s=1:numberOfPeaks
     % Extrapolated leading edge timing discrimination for pulseIn.
     % --------------------------------------------------------------------------------------
         
-    elseif (timingIn == 0 || timingIn == 2) && foundFrac1 > round(5E-9/dN) ...
-            && foundFrac2 > round(5E-9/dN) && ...
+    elseif (timingIn == 0 || timingIn == 2 || timingIn == 4) && foundFrac1 > round(0.5E-9/dN) ...
+            && foundFrac2 > round(0.5E-9/dN) && ...
             count1 < 0.99*numel(pulseIny) && count2 < 0.99*numel(pulseIny) && ...
             foundFrac1 < 0.99*numel(pulseIny) && foundFrac2 < 0.99*numel(pulseIny) && ...
             pulseIny(foundFrac2) < 0.99*VMin{c}(s)
@@ -584,7 +843,9 @@ for s=1:numberOfPeaks
             %pulseIny(foundFrac2) - pulseIny(foundFrac1) >= 0 ...%0.1*(VMinFraction2 - VMinFraction1) 
             %&& (activeNeuron == 0 || exact(activeNeuron) == 1)
         
-            
+            'FOUNDFRAC1 AND 2';
+            foundFrac1;
+            foundFrac2;
             if foundFrac2 == foundFrac1
                 foundFrac2 = foundFrac2 + 1;
                 
@@ -639,22 +900,29 @@ for s=1:numberOfPeaks
         %size(pulseInx(foundFrac1:foundFrac2))
         %size(pulseIny(foundFrac1:foundFrac2))
         try
-        lastwarn('');
-        pFit = polyfit(pulseInx(foundFrac1:foundFrac2),pulseIny(foundFrac1:foundFrac2),1);
-        [warnMsg, ~] = lastwarn;
-        
-        
+            lastwarn('');
+            pFit = polyfit(pulseInx(foundFrac1:foundFrac2),pulseIny(foundFrac1:foundFrac2),1);
+            [warnMsg, ~] = lastwarn;
+            
+            if ~isempty(warnMsg)
+                'WARNING'
+                pFit = polyfit(pulseInx(foundFrac1:foundFrac2 + 1),pulseIny(foundFrac1:foundFrac2 + 1),1);
+                
+            end
+            
             fitEval = polyval(pFit,pulseInx(foundFrac1:foundFrac2));
             baseline = fitEval(1);
             
-        
-        
-        % Rise time filter based on linear fit.
-        if TypeIn == 3
             
-            riseTime = abs((VMinFraction2 - VMinFraction1)/pFit(1));
             
-            if riseTime < RTFUpIn && riseTime > RTFLIn
+            % Rise time filter based on linear fit.
+            if TypeIn == 3
+                
+                riseTime = abs((VMinFraction2 - VMinFraction1)/pFit(1));
+                
+                goodRiseTime = true;
+                %{
+            if riseTime <= RTFUpIn && riseTime >= RTFLIn
                 goodRiseTime = true;
                 
             else
@@ -662,11 +930,11 @@ for s=1:numberOfPeaks
                 'goodRiseTime false'
                 
             end
-            
-        else
-            goodRiseTime = true;
-            
-        end
+                %}
+            else
+                goodRiseTime = true;
+                
+            end
         catch
             'fit error'
             
@@ -674,8 +942,8 @@ for s=1:numberOfPeaks
         %valuation = polyval(pFit,pulseInx(foundFrac1:foundFrac2));
         
         % Ensuring no fit error when calculating crossTime.
-        if goodRiseTime == true && isempty(warnMsg) && ...
-                (timingIn == 0 || timingIn == 2)
+        if goodRiseTime == true && ...
+                (timingIn == 0 || timingIn == 2 || timingIn == 4)
             
             crossTime(s) = -(baseline + pFit(2))/pFit(1);
             noGood = false;
@@ -695,7 +963,7 @@ for s=1:numberOfPeaks
             
         end
         
-    elseif timingIn ~= 4
+    elseif timingIn ~= 3
         noGood = true;
         crossTime(s) = NaN;
         riseTime = 1;
@@ -704,7 +972,7 @@ for s=1:numberOfPeaks
         
     end
     
-    if TypeIn == 3 && timingIn == 4 && T ~= 0 && 1 == 0% && isempty(output) == 0
+    if TypeIn == 3 && timingIn == 5 && T ~= 0 && 1 == 0% && isempty(output) == 0
         try
             if goodRiseTime == true% && isempty(warnmsg)
                 %'dfsdsffds'
@@ -762,7 +1030,7 @@ for s=1:numberOfPeaks
         
     end
     
-    %{
+    
     % Plot CFD and ELET markers on pulses with more than one peak
     doesIt = evalin('base','exist(''ax'',''var'');');
     doesIt2 = evalin('base','exist(''ax2'',''var'');');
@@ -780,33 +1048,39 @@ for s=1:numberOfPeaks
     end
     
     if isIt == 0
-        evalin('base','figure;');
+        evalin('base','f = figure;');
         evalin('base','ax = subplot(1,1,1);');
         evalin('base','plotNext = false;');
         
     end
     
     if isIt2 == 0
-        evalin('base','figure;');
+        evalin('base','f2 = figure;');
         evalin('base','ax2 = subplot(1,1,1);');
         evalin('base','plotNext = false;');
         
     end
     
-    if s == numPeaks && foundFrac ~= 0 && TypeIn == 1 && noGood == false
+    if TypeIn == 1 && s == numPeaks && foundFrac ~= 0 && TypeIn == 1 && noGood == false
         assignin('base','pulseIny',pulseIny);
         assignin('base','foundFraction',foundFraction);
         %evalin('base','figure(ax)');
         evalin('base','plot(ax,pulseIny,''-p'',''MarkerIndices'',foundFraction,''MarkerFaceColor'',''red'',''MarkerSize'',15);');
         evalin('base','plotNext = true;');
-        
+        %{
+        if numPeaks == 2
+            pause(2)
+        end
+        %}
     end
     
     plotNext = evalin('base','plotNext;');
-    size(pulseIny)
-    size(pulseInx)
-    if plotNext == true && foundFrac1 ~= 0 && foundFrac2 ~= 0 && TypeIn == 3 && noGood == false
+    size(pulseIny);
+    size(pulseInx);
+    
+    if TypeIn == 3 && tempOn == false && timingIn == 0 && plotNext == true && foundFrac1 ~= 0 && foundFrac2 ~= 0 && TypeIn == 3 && noGood == false
         assignin('base','pulseIny',pulseIny);
+        assignin('base','pulseInx',pulseInx);
         assignin('base','foundFrac1',foundFrac1);
         assignin('base','foundFrac2',foundFrac2);
         %evalin('base','figure(ax)');
@@ -814,8 +1088,47 @@ for s=1:numberOfPeaks
         evalin('base','plotNext = false;');
         
     end
+    
+    % ---------------------------------------------------------------------
+    %{
+    'FIRST'
+    TypeIn == 3
+    tempOn == true
     %}
+    
+    if TypeIn == 3 && tempOn == true %s == numPeaks && foundFrac ~= 0 && TypeIn == 1 && noGood == false
+        assignin('base','pulseIny',pulseIny);
+        assignin('base','foundFrac',foundFrac);
+        %evalin('base','figure(ax)');
+        evalin('base','plot(ax,pulseIny,''-p'',''MarkerIndices'', foundFrac,''MarkerFaceColor'',''red'',''MarkerSize'',15);');
+        evalin('base','plotNext = true;');
+        
+        risingEdge
+        VMinIndex{c}(s)
+        
+    end
+    
+    plotNext = evalin('base','plotNext;');
+    %{
+    'SECOND'
+    TypeIn == 3 
+    scintPulse == 1
+    tempOn == false
+    plotNext == true
+    %}
+    if TypeIn == 3 && tempOn == false && plotNext == true
+        assignin('base','pulseIny',pulseIny);
+        assignin('base','pulseInx',pulseInx);
+        assignin('base','foundFrac',foundFrac);
+        %evalin('base','figure(ax)');
+        evalin('base','plot(ax2,pulseIny,''-p'',''MarkerIndices'', foundFrac,''MarkerFaceColor'',''red'',''MarkerSize'',15);');
+        evalin('base','plotNext = false;');
+        
+    end
+    %}
+    %crossTime(s) = crossTime(s)/1E9;
 end
+
 
 % Breaking from the loop if there are more or fewer electrons detected
 % than are set by the multi-stop conditions.
@@ -829,6 +1142,15 @@ if TypeIn == 1 && ((multiStopIn == '1' && (numel(warnMsg) > 0) || ...
     riseTime = 1;
     numberOfPeaks = 0;
     
+    %{
+    if rejecting == true
+    'NUMPEAKS'
+        multiStopConditionsIn
+        numPeaks
+        pause(10)
+    
+    end
+      %}  
     %{
         if integration < 0.005
             integration

@@ -1,29 +1,32 @@
 
-f1 = figure;
-ax1 = axes(f1);
+%f1 = figure;
+%ax1 = axes(f1);
 %f2 = figure;
 %ax2 = axes(f2);
 
-x = linspace(1,438,438);
+x = linspace(1,1500,1500);
 
 %percentage = zeros(144,2);
 range1 = 160;
 range2 = 180;
 
-%netMatrix = net(tN(:,1:75000));
+%netMatrix = net(pulsesSingle(:,1:14000));
 nt = [];
 
-for j=61:400
+for j=1:128
     
     nt=[];
     
     %if exact(j) == 1
+    
+    nt = pulsesSingle(:,netMatrix(j,:) == 1);
+    
+    if ~isempty(nt)
         
-        nt = tN(:,netMatrix(j,:) == 1);
+        nt2 = nt(:,1:10);%mean(nt,2);
         
-        if ~isempty(nt)
-        plot(ax1,x,nt)
-        xticks(ax1,0:10:400);
+        plot(ax1,x,nt2)
+        xticks(ax1,0:10:438);
         grid(ax1,'on')
         %beep
         j
@@ -34,8 +37,8 @@ for j=61:400
             
         end
         
-        end
-        
+    end
+    
         %{
         if yesno == 'y'
         

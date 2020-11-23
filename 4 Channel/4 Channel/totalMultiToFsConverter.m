@@ -1,0 +1,108 @@
+totalMultiEnergies = zeros(size(totalMultiToFs));
+
+% Did you fit a new curve or are you running it again with the same
+% polynomial coefficients as before?
+newFunction = input('Is there a new equation (0 for no; 1 for yes)? ');
+
+if newFunction == 1
+    
+    numPoly = input('Number of polynomial coefficients: ');
+    
+    % A0 = constant; A1 = lowest magnitude coefficient (x^1); etc.
+    coeff(1) = input('A0 (e.g. 1E-9): ');
+    
+    for n=2:numPoly + 1
+        coeff(n) = input(['A', num2str(n-1), ': ']);
+        
+    end
+    
+    % Flipping the polynomial coefficient vector in order to feed it into
+    % the function polyval().
+    coeff = flip(coeff);
+    
+end
+
+numBins = input('Number of histogram bins: ');
+maxE = input('Maximum Energy (in eV; e.g. 1000): ');
+
+% To remove counts below the sample bias.
+maxToF = input('Maximum First Electron ToF Cutoff (in ns): ');
+
+maxToF = maxToF*10.^(-9);
+
+totalMultiToFsCutoff = totalMultiToFs;
+
+totalMultiToFsCutoff(:,totalMultiToFs(2,:) >= maxToF) = NaN;
+
+sampleBias = input('Sample bias (V): ');
+
+for e=1:numel(totalMultiToFs(:,1))
+    
+    try
+        % polyval() evaluates the polynomial coefficient vector.
+        totalMultiEnergies(e,:) = (polyval(coeff, totalMultiToFsCutoff(e,:)*10.^9)).^(-2);
+        
+    catch
+        
+        msgbox('Electron ToF Matrix not loaded');
+        'Electron ToF Matrix not loaded'
+        
+    end
+    
+    binAxis = linspace(0, maxE, numBins);
+    
+    hE(:,e) = histcounts(totalMultiEnergies(e,:), 'NumBins', numBins, ...
+        'BinLimits',[0 maxE])';
+    
+    figure
+    plot(binAxis, hE(:,e))
+    title(['Electron ', num2str(e)]);
+    
+end
+
+[~, maxELocation] = min(abs(binsM - maxE));
+[~, SBELocation] = min(abs(binsM - sampleBias));
+
+binsCell = {binsM(1:maxELocation) binsM(1:maxELocation)};
+binsMSBCell = {binsM(SBELocation:maxELocation) binsM(SBELocation:maxELocation)};
+
+eVse = hist3(totalMultiEnergies', 'Edges', binsCell); %{0:maxE/(numBins-1):maxE 0:maxE/(numBins-1):maxE});
+
+eVseMinusSampleBias = hist3(totalMultiEnergies', 'Edges', binsMSBCell);
+
+eVseToF = hist3(totalMultiToFs', 'Edges', {0:maxToF/(numBins-1):maxToF 0:maxToF/(numBins-1):maxToF});
+
+%{
+eVse = zeros(numBins);
+
+binsSize = maxE/numBins;
+
+for s=1:numel(totalMultiToFs(1,:))
+   
+    whichBin(1,s) = ceil(totalMultiEnergies(1,s)/binsSize);
+    whichBin(2,s) = ceil(totalMultiEnergies(2,s)/binsSize);
+    
+    if whichBin(1,s) > 0 && whichBin(1,s) <= numBins && ...
+            whichBin(2,s) > 0 && whichBin(2,s) <= numBins && ...
+            totalMultiToFs(2,s) <= maxToF
+        
+        eVse(whichBin(1,s),whichBin(2,s)) = eVse(whichBin(1,s),whichBin(2,s)) + 1;
+        
+    end
+    
+end
+%}
+figure
+surf(eVse)
+shading interp
+zlim([0.1 max(max(eVse))])
+
+figure
+surf(eVseMinusSampleBias)
+shading interp
+zlim([0.1 max(max(eVseMinusSampleBias))])
+
+figure
+surf(eVseToF)
+shading interp
+zlim([0.1 max(max(eVseToF))])

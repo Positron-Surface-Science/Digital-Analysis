@@ -1,13 +1,15 @@
-xToF = linspace(-0.25E-6,0.25E-6,1024)';
+xToF = linspace(0,1.5E-9,256)';
 
 
     observe = [];
     fwhm = [];
     index = [];
-    %best2 = [];
+    best2 = [];
+    amplitude = [];
+    x0 = [];
     
 
-for n=1:400
+for n=1:16
     
     %if exact(n) == 1
         
@@ -17,10 +19,10 @@ for n=1:400
                 
                 allNeurons.neurons{n}(allNeurons.neurons{n}(:,i) == 0,i) = NaN;
                 
-                hToF = histcounts(allNeurons.neurons{n}(:,i),'NumBins',1024,'BinLimits',[-0.25E-6 0.25E-6])';
+                hToF = histcounts(allNeurons.neurons{n}(:,i),'NumBins',256,'BinLimits',[0 1.5E-9])';
                 hToF = hToF/max(hToF);
-                
-                observe(i,n) = numel(allNeurons.neurons{n}(isnan(allNeurons.neurons{n}(:,i)) == 0,i));
+                plot(hToF)
+                observe(i,n) = numel(allNeurons.neurons{n}(~isnan(allNeurons.neurons{n}(:,i)),i));
                 
                 if max(hToF) < sum(hToF)
                     
@@ -28,7 +30,7 @@ for n=1:400
                         
                         [~,second] = max(hToF);
                         
-                        gaussFit = fit(xToF(second-200:second+200),hToF(second-200:second+200),'gauss1');
+                        gaussFit = fit(xToF,hToF,'gauss1');
                         
                         cValues = coeffvalues(gaussFit);
                         
@@ -72,9 +74,9 @@ for n=1:400
         
         try
             
-            [a,b] = min(fwhm(observe(:,n) >= 0.25*max(observe(:,n)),n));
+            [a,b] = min(fwhm(observe(:,n) >= 0.9*max(observe(:,n)),n));
             
-            index = find(fwhm(:,n) <= 1.05*a & fwhm(:,n) > 0);
+            index = find(fwhm(:,n) <= 1.25*a & fwhm(:,n) > 0);
             
             [~,minFwhmIndex] = min(fwhm(index,n));
             
@@ -88,10 +90,10 @@ for n=1:400
                 'a == 0 error'
                 
             end
-            
+           
         catch
-            %best2(:,n) = [0 0 0 0];
-            %'try error 2'
+            best2(:,n) = [0 0 0 0];
+            'try error 2'
             
         end
         
