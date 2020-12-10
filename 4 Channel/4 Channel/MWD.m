@@ -67,7 +67,7 @@ offset = offset1 + 1100E-9;
 %shapedPulse = pulseDeconv.y;
 
 is = 1;
-plottingOn = 1;
+plottingOn = 0;
 plottingOn2 = 0;
 plottingOn3 = 0;
 plottingOn4 = 0;

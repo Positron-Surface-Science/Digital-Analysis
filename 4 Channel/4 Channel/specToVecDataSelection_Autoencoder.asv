@@ -9,15 +9,15 @@ p4s = p4s - b4;
 b5 = mean(p5s(200:400,:));
 p5s = p5s - b5;
 
-range1 = 501;
-range2 = 950;
+range1 = 451;
+range2 = 1200;
 
 specRange1 = 1;
-specRange2 = 176;
+specRange2 = 126;
 
-t1 = 5;
+t1 = 4;
 t2 = 2;
-t3 = 350;
+t3 = 30;
 
 nPulsesPerPeak = 5000;
 

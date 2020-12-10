@@ -1,12 +1,12 @@
-range1 = 250;
+range1 = 501;
 range2 = 1750;
 
 specRange1 = 1;
-specRange2 = 150;
+specRange2 = 100;
 
 t1 = 10;
-t2 = 2;
-t3 = 350;
+t2 = 5;
+t3 = 250;
 
 nPulsesPerPeak = 4250;
 

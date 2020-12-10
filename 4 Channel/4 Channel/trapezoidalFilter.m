@@ -1488,8 +1488,9 @@ vOut = conv(vIn.y(50:numel(vIn.y)-50),squarePulse);
         p = vIn.y(round(10E-6/Ts):round(50E-6/Ts)); %round(35E-6/Ts));
         assignin('base','vIn',vIn.y);
         
+        
         size(p);
-        p = p(501:4000);
+        p = p(501:1000);
         net = evalin('base','net4');
         
         pM = evalin('base','ps1Mean');
@@ -1498,25 +1499,25 @@ vOut = conv(vIn.y(50:numel(vIn.y)-50),squarePulse);
         out = (predict(net, p, 'ExecutionEnvironment', 'cpu'));
         out = out*pS + pM;
         p = p*pS + pM;
-        %out = out; %(out*pS + pM)*100
-        %}
+        out2 = out; %(out*pS + pM)*100
+        
         %baseline = 0;%mean(out(1:50));
         %out = out - baseline;
-        %{
         
+        %{
         net = evalin('base','net4');
         
         fs = 2.5E9;
         
-range1 = 250;
-range2 = 1750;
+range1 = 501;
+range2 = 950;
 
 specRange1 = 1;
-specRange2 = 75;
+specRange2 = 176;
 
-t1 = 15;
-t2 = 5;
-t3 = 250;
+t1 = 5;
+t2 = 2;
+t3 = 350;
         
         p = p(range1:range2);
         net = evalin('base','net4');
@@ -1525,23 +1526,24 @@ t3 = 250;
         
         
         out = predict(net, rispec*1E4, 'ExecutionEnvironment', 'cpu');
-        plot([p out/10000])
-        %}
-        %{
-        
-        out = out% - mean(out(200:300));
-        
+        out = out/10000;
         plot([p out])
+        %}
         
-        out = out*100;
+        
+        %out = out;% - mean(out(200:300));
+        
+        %plot([p out])
+        
+        %out = out*100;
         
 
-        plot([p out])
+        %plot([p out])
 
         %out = (out*pS + pM)*100;
         
         %}
-        %plot([p out])
+        plot([p out])
         %out2 = p - out;
         out2 = out*100;
         %plot(out2)
@@ -1553,15 +1555,15 @@ t3 = 250;
         %}
         %[trapezoidalPlateauAverage,vOut,noGood] = MWD(vIn,out,TFRFIn,TFTopIn);
         %trapezoidalPlateauAverage
-        trapezoidalPlateauAverage = 0.001831*(2587/356)*out
-        %out2 = smooth(out2,20,'moving');
-        %trapezoidalPlateauAverage = out2(150); %max(out2);
+        %trapezoidalPlateauAverage = 0.001831*(2587/356)*out
+        out2 = smooth(p*100,35,'moving');
+        trapezoidalPlateauAverage = max(out2)
         %trapezoidalPlateauAverage = (max(aF(1:numel(aF)-10))*100 + max(aF2(1:numel(aF2)-10))*100 + ...
         %    max(aF3(1:numel(aF3)-10))*100)/3;% - mean(vIn.y(round(10E-6/Ts):round(10E-6/Ts)+400))*100;% - mean(a(100:400))*100;
         vOut = out2;
         noGood = 0;
         
-        if trapezoidalPlateauAverage <= 0 && false
+        if trapezoidalPlateauAverage <= 1.28
             trapezoidalPlateauAverage = 0;
             vOut = [];
             noGood = 1;
