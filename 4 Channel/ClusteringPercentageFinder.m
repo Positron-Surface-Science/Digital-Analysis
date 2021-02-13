@@ -1,29 +1,29 @@
 
-f1 = figure;
-ax1 = axes(f1);
+%f1 = figure;
+%ax1 = axes(f1);
 %f2 = figure;
 %ax2 = axes(f2);
 
-x = linspace(1,1501,1501);
+x = linspace(1,1500,1500);
 
 %percentage = zeros(144,2);
 range1 = 160;
 range2 = 180;
 
-%netMatrix = net(tracesSingle(:,1:70000));
+%netMatrix = net(pulsesSingle(:,1:14000));
 nt = [];
 
-for j=240:256
+for j=1:128
     
     nt=[];
     
     %if exact(j) == 1
     
-    nt = tracesSingle(:,netMatrix(j,:) == 1);
+    nt = pulsesSingle(:,netMatrix(j,:) == 1);
     
     if ~isempty(nt)
         
-        nt2 = mean(nt,2);
+        nt2 = nt(:,1:10);%mean(nt,2);
         
         plot(ax1,x,nt2)
         xticks(ax1,0:10:438);

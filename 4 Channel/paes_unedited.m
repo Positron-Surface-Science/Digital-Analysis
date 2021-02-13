@@ -10,9 +10,12 @@ function [crossTime,noGood,numberOfPeaks,riseTime] = paes_unedited(timingIn,Type
 %pulseIn.x = single(pulseIn.x);
 pulseIny = pulseIn.y;
 pulseInx = pulseIn.x;
+tempOn = false;
 
-if ~isempty(t)
+if ~isempty(t) && TypeIn == 1
     TypeIn = 3;
+    tempOn = true;
+    
 end
 
 try
@@ -38,6 +41,9 @@ findingNoise = false;
 neuronTemp = neuron;
 scintPulse = 0;
 gggc = 0;
+numberOfPeaks = 1;
+rejecting = false;
+
 %ELETMatrix = ELETMatrix';
 %a = fieldnames(DiscriminationVector);
 %exact = getfield(DiscriminationVector,a{1});
@@ -47,6 +53,7 @@ gggc = 0;
 
 if TypeIn == 1 && ggc == 0
     neuronTemp = 0;
+    
     % Considering if a pulse is negative- or positive-going.
     if max(pulseIny) < abs(min(pulseIny))
         pulseIny = -pulseIny;
@@ -56,10 +63,10 @@ if TypeIn == 1 && ggc == 0
     lastwarn('');
     % Set to detect peaks 15 ns apart (15*10.^(-9)/dN)
     [VMin{c},VMinIndex{c}] = findpeaks(pulseIny(50:numel(pulseIny)-50),...
-        'MinPeakDistance',round((2.5*10.^(-9))/dN), ...
-        'MinPeakHeight',1.25*10.^(-3),'MinPeakProminence',1.25*10.^(-3), ...
-        'MinPeakWidth',round((14*10.^(-9))/dN),'WidthReference', ...
-        'halfheight','MaxPeakWidth',round((50*10.^(-9)/dN)));
+        'MinPeakDistance',round((14*10.^(-9))/dN), ...
+        'MinPeakHeight',1*10.^(-3),'MinPeakProminence',0.25*10.^(-3), ...
+        'MinPeakWidth',round((10*10.^(-9))/dN),'WidthReference', ...
+        'halfheight','MaxPeakWidth',round((75*10.^(-9)/dN)));
     
     [warnMsg, ~] = lastwarn;
     VMinIndex{c} = VMinIndex{c} + 50;
@@ -85,7 +92,7 @@ if TypeIn == 1 && ggc == 0
     end
     
     if multiStopIn == '1' && multiStopConditionsIn == 7 && numPeaks == 2
-        multiStopConditionsIn = 3;
+        %multiStopConditionsIn = 3;
         
     elseif multiStopIn == '1' && multiStopConditionsIn == 7 && numPeaks == 3
         multiStopConditionsIn = 3;
@@ -101,6 +108,26 @@ if TypeIn == 1 && ggc == 0
         
     end
     
+    %{
+     if numPeaks == 3
+        TypeIn == 1
+        multiStopIn == '1'
+        numel(warnMsg) > 0
+        multiStopConditionsIn ~= 4
+        multiStopConditionsIn ~= 5
+        'NUMPEAKS'
+        multiStopConditionsIn
+        numPeaks
+        multiStopConditionsIn ~= numPeaks
+        (multiStopConditionsIn == 5 && (numPeaks == 1 || numPeaks == 0))
+        numPeaks > 5
+        
+        rejecting = true;
+        
+        pause(15)
+        
+    end
+    %}
     %if numPeaks == 0
         %figure
      %   plot(pulseIn.y)
@@ -127,6 +154,11 @@ elseif TypeIn == 1 && ggc == 1
     
 elseif TypeIn ~= 1
     'VMin';
+       %{         
+    [VMin{c},VMinIndex{c}] = max(earlyOne(10:numel(earlyOne)-50));
+    [VMin2{c},VMinIndex2{c}] = min(earlyOne(10:numel()-50));
+         %}
+               
     [VMin{c},VMinIndex{c}] = max(pulseIny(10:numel(pulseIny)-50));
     [VMin2{c},VMinIndex2{c}] = min(pulseIny(10:numel(pulseIny)-50));
     
@@ -141,6 +173,7 @@ elseif TypeIn ~= 1
         
     end
     
+    %VMin{c} = (VMin{c} + mean(pulseIny(VMinIndex{c}-3:VMinIndex{c}+3)))/2;
     VMinIndex{c} = VMinIndex{c} + 10;
     warnMsg = [];
     crossTime = NaN;
@@ -206,9 +239,9 @@ for s=1:numberOfPeaks
     %s
     % Integrating peak and region before peak to reduce periodic noise
     % pulses.
-    if (TypeIn == 1 && ggc == 0) && VMinIndex{c}(s)-round((100*10.^(-9)/dN)) > 0
+    if (TypeIn == 1 && ggc == 0) && VMinIndex{c}(s)-round((50*10.^(-9)/dN)) > 0
         
-        integration = trapz(pulseIny(VMinIndex{c}(s)-round((100*10.^(-9)/dN)) ...
+        integration = trapz(pulseIny(VMinIndex{c}(s)-round((50*10.^(-9)/dN)) ...
             :VMinIndex{c}(s)));
         
     elseif TypeIn == 1
@@ -309,37 +342,94 @@ for s=1:numberOfPeaks
         end
         %}
         
-        if TypeIn == 1 && ggc == 0
+        if TypeIn == 1 && ggc == 0 && scintPulse == 0 && tempOn == false
             'IF';
-            [~, foundFrac] = min(abs(pulseIny(VMinIndex{c}(s)- ...
-                round(50*10.^(-9)/dN):VMinIndex{c}(s)) - VMinFraction));
+            if s >= 2 && pulseInx(VMinIndex{c}(s)) - pulseInx(VMinIndex{c}(s-1)) ...
+                    <= 50*10.^(-9)
+                
+                [~, foundFrac] = min(abs(pulseIny(VMinIndex{c}(s-1) ...
+                    :VMinIndex{c}(s)) - VMinFraction));
+                
+                foundFrac = foundFrac + VMinIndex{c}(s-1);
+                foundFraction = horzcat(foundFraction,foundFrac);
+                
+            else
+                
+                [~, foundFrac] = min(abs(pulseIny(VMinIndex{c}(s)- ...
+                    round(50*10.^(-9)/dN):VMinIndex{c}(s)) - VMinFraction));
+                
+                foundFrac = foundFrac + (VMinIndex{c}(s) - round(50*10.^(-9)/dN));
+                foundFraction = horzcat(foundFraction,foundFrac);
+                
+            end
+            
             %{
             [~, foundFrac] = min(abs(pulseIny(VMinIndex{c}(s-1)+ ...
                 round(10*10.^(-9)/dN):VMinIndex{c}(s)) - VMinFraction));
                 foundFrac = foundFrac + VMinIndex{c}(s-1) + round(20*10.^(-9)/dN);
             %}
             %assignin('base','pulseIn',pulseIny(VMinIndex{c}(s-1)+round(10*10.^(-9)/dN):numel(pulseIny)));
-            foundFrac = foundFrac + (VMinIndex{c}(s) - round(50*10.^(-9)/dN));
-            foundFraction = horzcat(foundFraction,foundFrac);
             
         else
             'ELSE';
             % WAS 700 ns
             
-            try
+            %try
+            
+            earlyOne = smooth(pulseIny(1: ...
+                VMinIndex{c}(s)), 5);
+            
+            leap = diff(smooth(diff(earlyOne), 5));
+            
+                [~, risingEdge] = max(leap(50:end-5));
                 
+                risingEdge = risingEdge + 45;
+                
+                %{
+                [~, midPulse] = min(abs(pulseIny(risingEdge: ...
+                    VMinIndex{c}(s)) - 0.25*VMin{c}(s)));
+                
+                midPulse = midPulse + risingEdge + 5;
+                %}
+                
+                %size(leap)
+                %size(pulseIny(1:VMinIndex{c}(s)))
+                
+                if tempOn == true
+                    %plot([leap pulseIny(1:VMinIndex{c}(s)-2)])
+                    
+                end
+                
+                %{
                 [~, foundFrac] = min(abs(pulseIny(VMinIndex{c}(s)-round(700E-9/dN): ...
                     VMinIndex{c}(s)) - VMinFraction));
                 foundFrac = foundFrac + (VMinIndex{c}(s) - round(700E-9/dN));
                 %foundFraction = horzcat(foundFraction,foundFrac);
+                %}
                 
+                [~, foundFrac] = min(abs(pulseIny(risingEdge: ...
+                    VMinIndex{c}(s)) - VMinFraction));
+                
+                if tempOn == true
+                'FOUNDFRAC'
+                c
+                risingEdge
+                foundFrac
+                VMinIndex{c}(s)
+                [~,maximum] = max(pulseIny);
+                maximum
+                end
+                
+                foundFrac = foundFrac + risingEdge;
+                
+             %{   
             catch
                 
                 [~, foundFrac] = min(abs(pulseIny(1: ...
                     VMinIndex{c}(s)) - VMinFraction));
                 
             end
-            
+            %}
         end
         
     % ---------------------------------
@@ -404,6 +494,7 @@ for s=1:numberOfPeaks
             else
                 %}
             if scintPulse == 1
+                'SCINT PULSE!!!!!!!'
                 try
                     [~, foundFrac1] = min(abs(pulseIny(VMinIndex{c}(s)-round(100E-9/dN): ...
                         VMinIndex{c}(s)) - VMinFraction1));
@@ -426,17 +517,38 @@ for s=1:numberOfPeaks
                 
             else
                 
-                leap = diff(smooth(diff(smooth(pulseIny(VMinIndex{c}(s) - round(1500E-9/dN): ...
-                    VMinIndex{c}(s)), 100)), 100));
+                earlyOne = smooth(pulseIny(VMinIndex{c}(s)-round(5E-6/dN): ...
+                    VMinIndex{c}(s) + round(5E-6/dN)), 50);
                 
-                [~, risingEdge] = max(leap(200:end - 100));
+                leap = diff(smooth(diff(earlyOne), 50));
                 
-                risingEdge = risingEdge + VMinIndex{c}(s) - round(1500E-9/dN) + 200;
+                [~, risingEdge] = max(leap(200:end-200));
+                [~, turningEdge] = min(leap(200:end-200));
+                
+                
+                %plot(leap)
+                
+                
+                %leap = diff(smooth(diff(smooth(pulseIny(VMinIndex{c}(s) - round(1500E-9/dN): ...
+                %    VMinIndex{c}(s)), 100)), 100));
+                
+                %[~, risingEdge] = max(leap(200:end - 100));
+                
+                risingEdge = risingEdge + VMinIndex{c}(s) - round(5E-6/dN) + 200;
+                turningEdge = turningEdge + VMinIndex{c}(s) - round(5E-6/dN) + 200;
+                
+                
                 
                 [~, midPulse] = min(abs(pulseIny(risingEdge: ...
-                    VMinIndex{c}(s)) - 0.25*VMin{c}(s)));
+                    turningEdge) - 0.20*VMin{c}(s)));
                 
                 midPulse = midPulse + risingEdge;
+                
+                
+               
+                %size(pulseIny)
+                %size(leap)
+                %plot(leap(200:end-100))
                 
                 %{
                 [fracVal1, foundFrac1] = min(abs(pulseIny(VMinIndex{c}(s)-round(700E-9/dN): ...
@@ -456,9 +568,28 @@ for s=1:numberOfPeaks
                 foundFrac1 = foundFrac1 + risingEdge;
                 foundFrac2 = foundFrac2 + risingEdge;
                 
-                if fracVal1 >= VMinFraction1 + 0.1*VMinFraction1 || fracVal2 < fracVal1 || ...
+                %{
+                 'ASDFIF!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+                risingEdge
+                turningEdge
+                midPulse
+                VMinIndex{c}(s)
+                foundFrac1
+                foundFrac2
+                pause(5)
+                
+                
+                
+                fracVal1
+                VMinFraction1 + 0.25*VMinFraction1
+                fracVal2
+                fracVal1 
+                        foundFrac2
+                        foundFrac1
+                %}
+                if fracVal1 >= VMinFraction1 + 0.25*VMinFraction1 || fracVal2 < fracVal1 || ...
                         foundFrac2 < foundFrac1
-                    
+                    'HERE'
                     [fracVal1, foundFrac1] = min(abs(pulseIny(VMinIndex{c}(s) - round(5000E-9/dN): ...
                         midPulse) - VMinFraction1));
                     [fracVal1, foundFrac2] = min(abs(pulseIny(VMinIndex{c}(s) - round(5000E-9/dN): ...
@@ -478,6 +609,7 @@ for s=1:numberOfPeaks
                     %}
                         
                 end
+                
                 
                 if pulseInx(foundFrac2) - pulseInx(foundFrac1) > 500E-9 || ...
                         foundFrac2 < foundFrac1 || ...
@@ -916,32 +1048,37 @@ for s=1:numberOfPeaks
     end
     
     if isIt == 0
-        evalin('base','figure;');
+        evalin('base','f = figure;');
         evalin('base','ax = subplot(1,1,1);');
         evalin('base','plotNext = false;');
         
     end
     
     if isIt2 == 0
-        evalin('base','figure;');
+        evalin('base','f2 = figure;');
         evalin('base','ax2 = subplot(1,1,1);');
         evalin('base','plotNext = false;');
         
     end
     
-    if s == numPeaks && foundFrac ~= 0 && TypeIn == 1 && noGood == false
+    if TypeIn == 1 && s == numPeaks && foundFrac ~= 0 && TypeIn == 1 && noGood == false
         assignin('base','pulseIny',pulseIny);
         assignin('base','foundFraction',foundFraction);
         %evalin('base','figure(ax)');
         evalin('base','plot(ax,pulseIny,''-p'',''MarkerIndices'',foundFraction,''MarkerFaceColor'',''red'',''MarkerSize'',15);');
         evalin('base','plotNext = true;');
-        
+        %{
+        if numPeaks == 2
+            pause(2)
+        end
+        %}
     end
     
     plotNext = evalin('base','plotNext;');
     size(pulseIny);
     size(pulseInx);
-    if plotNext == true && foundFrac1 ~= 0 && foundFrac2 ~= 0 && TypeIn == 3 && noGood == false
+    
+    if TypeIn == 3 && tempOn == false && timingIn == 0 && plotNext == true && foundFrac1 ~= 0 && foundFrac2 ~= 0 && TypeIn == 3 && noGood == false
         assignin('base','pulseIny',pulseIny);
         assignin('base','pulseInx',pulseInx);
         assignin('base','foundFrac1',foundFrac1);
@@ -951,9 +1088,47 @@ for s=1:numberOfPeaks
         evalin('base','plotNext = false;');
         
     end
+    
+    % ---------------------------------------------------------------------
+    %{
+    'FIRST'
+    TypeIn == 3
+    tempOn == true
+    %}
+    
+    if TypeIn == 3 && tempOn == true %s == numPeaks && foundFrac ~= 0 && TypeIn == 1 && noGood == false
+        assignin('base','pulseIny',pulseIny);
+        assignin('base','foundFrac',foundFrac);
+        %evalin('base','figure(ax)');
+        evalin('base','plot(ax,pulseIny,''-p'',''MarkerIndices'', foundFrac,''MarkerFaceColor'',''red'',''MarkerSize'',15);');
+        evalin('base','plotNext = true;');
+        
+        risingEdge
+        VMinIndex{c}(s)
+        
+    end
+    
+    plotNext = evalin('base','plotNext;');
+    %{
+    'SECOND'
+    TypeIn == 3 
+    scintPulse == 1
+    tempOn == false
+    plotNext == true
+    %}
+    if TypeIn == 3 && tempOn == false && plotNext == true
+        assignin('base','pulseIny',pulseIny);
+        assignin('base','pulseInx',pulseInx);
+        assignin('base','foundFrac',foundFrac);
+        %evalin('base','figure(ax)');
+        evalin('base','plot(ax2,pulseIny,''-p'',''MarkerIndices'', foundFrac,''MarkerFaceColor'',''red'',''MarkerSize'',15);');
+        evalin('base','plotNext = false;');
+        
+    end
     %}
     %crossTime(s) = crossTime(s)/1E9;
 end
+
 
 % Breaking from the loop if there are more or fewer electrons detected
 % than are set by the multi-stop conditions.
@@ -967,6 +1142,15 @@ if TypeIn == 1 && ((multiStopIn == '1' && (numel(warnMsg) > 0) || ...
     riseTime = 1;
     numberOfPeaks = 0;
     
+    %{
+    if rejecting == true
+    'NUMPEAKS'
+        multiStopConditionsIn
+        numPeaks
+        pause(10)
+    
+    end
+      %}  
     %{
         if integration < 0.005
             integration

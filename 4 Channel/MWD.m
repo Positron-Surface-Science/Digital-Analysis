@@ -4,7 +4,9 @@ digits(15)
 
 p = 1;%round(q/(L*pulseIn.desc.fs))
 q = floor((1.25*p)/0.1);
+
 Fs = (p/q)*pulseIn.desc.fs;
+
 T = (1/Fs);%q/p)*pulseIn.desc.Ts
 TFRFIn
 divid = round(288E-9/T);%243E-9;
@@ -13,6 +15,8 @@ divid = round(288E-9/T);%243E-9;
 L = round(TFRFIn/T) %3*10^(-6)
 %G = round(gRound/divid)*divid
 G = round(TFTopIn/T)
+
+%pulseIn.y = oldPulse;
 
 %{
 best = evalin('base','best;');
@@ -43,7 +47,14 @@ assignin('base','ap',ap);
 pulseIn.y = real(evalin('base','ap.*s;'));
 %}
 
-offset1 = -pulseIn.info.OFFSET;
+try
+    offset1 = -pulseIn.info.OFFSET;
+    %offset1 = 5E-6;
+catch
+    offset1 = 5E-6;
+    
+end
+
 offset = offset1 + 1100E-9;
 
 %plot(pulseIn.y)
@@ -65,16 +76,16 @@ SLF = 0;
 noGood = 0;
 ANN = 0;
 
-try
-   %{ 
+%try
+   %{
     measurePulse = smooth(pulseIn.y,101,'moving') - ...
-        mean(pulseIn.y(round(offset/T-2E-6/T):round(offset/T-1E-6/T)));
+        mean(pulseIn.y(round(offset1/T-2E-6/T):round(offset1/T-1E-6/T)));
     
     [m,ending] = max(measurePulse);
-    [~,begin] = min(abs(measurePulse(round(-pulseIn.info.OFFSET/T-1E-6/T): ...
-        round(-pulseIn.info.OFFSET/T))-0.1*m));
+    [~,begin] = min(abs(measurePulse(round(offset1/T-1E-6/T): ...
+        round(offset1/T))-0.1*m));
     
-    begin = begin + round((-pulseIn.info.OFFSET/T-1E-6/T));
+    begin = begin + round((offset1/T-1E-6/T));
     
     riseTime = (pulseIn.x(round(ending*q/p)) - pulseIn.x(round(begin*q/p)));
     
@@ -191,7 +202,10 @@ try
             %tau = -1/p(1);
             
             if n > round(offset/T)%&& n <= maxIndex + endLinear%-1/p(1); %65145.59927*p/q;%
-                tau = 5000; 
+                %%%% GOOD TAU
+                %tau = 5000; 
+                %%%%
+                tau = 5000;
                 %tau = 67545.59927*p/q;%-1/p(1);%-1/(5*p(1)*n^4 + 4*p(2)*n^3 + 3*p(3)*n^2 + 2*p(4)*n + p(5));%-1/(4*p(1)*n^3 + 3*p(2)*n^2 + 2*p(3)*n + p(4));%-1/(3*p(1)*n^2 + 2*p(2)*n + p(3));%-1/(7*p(1)*n^6 + 6*p(2)*n^5 + 5*p(3)*n^4 + 4*p(4)*n^3 + 3*p(5)*n^2 + 2*p(6)*n + p(7));
                 pulseDeconv.y(n) = pulseDeconv.y(n-1) + unNew(n) - unNew(n-1) + unNew(n-1)/tau;
                 
@@ -274,7 +288,7 @@ try
         %plot(shapedPulse)
         %[~,in] = max(shapedPulse);
         
-        indexBegin = round(offset/T) + round(L)%-round(100E-9/T);%round(15E-6/T)+round(G/2)% - round(1E-6/T);%index(2) + round(1000E-9/T);
+        indexBegin = round(offset/T) + L;%round(L)%-round(100E-9/T);%round(15E-6/T)+round(G/2)% - round(1E-6/T);%index(2) + round(1000E-9/T);
         indexEnd = round(offset/T) + round(G-1200E-9/T)%round((G - round(1E-6/T))/divid)*divid;%round(15E-6/T)+round(G/2 + 10E-9/T)%index(3) - round(100E-9/T);
         
         %iB = round(offset/T) + round(LT);
@@ -379,7 +393,7 @@ try
         a(5) = baseline;
         assignin('base','a',a);
         %}
-        
+        %assignin('base','x',pulseIn.x);
         baseline = mean(pulseIn.y(round((offset1-1000E-9)/T):round((offset1-250E-9)/T)));
         %{
         x = baseline;
@@ -395,7 +409,14 @@ try
          %}
         %indexBegin
         
-        amp = mean(shapedPulse(indexBegin:indexEnd))
+        amp = mean(shapedPulse(indexBegin:indexEnd))% + 6.6 - best(3, activeNeuron)
+        
+        if amp >= 0.5 && false
+            assignin('base','pulse',pulseIn.y);
+            evalin('base','pulses = horzcat(pulses,pulse);');
+            
+        end
+        
         %{
         amp2 = mean(shapedPulse(iB:iE))
         
@@ -410,19 +431,23 @@ try
             
         end
         %}
-        %{
-        try
+        
+        if amp >= 0.5 && amp <= 6 && true && false
             
-            assignin('base','amp',amp);
-            evalin('base','index = find(allNeurons.mwdNeurons{activeNeuron}(:,numberRuns) == 0);');
-            evalin('base','allNeurons.mwdNeurons{activeNeuron}(index(1),numberRuns) = amp;');
-            
-            
-        catch
-            'vector full'
+            try
+                
+                assignin('base','amp',amp);
+                evalin('base','index = find(allNeurons.mwdNeurons{activeNeuron}(:,numberRuns) == 0);');
+                evalin('base','allNeurons.mwdNeurons{activeNeuron}(index(1),numberRuns) = amp;');
+                
+                
+            catch
+                'vector full'
+                
+            end
             
         end
-        %}
+        
         %}
         %amp = amp - 0.5*amp*baseline^2;
         %assignin('base','pulseInx',pulseIn.x);
@@ -519,52 +544,51 @@ try
             %plot(shapedPulse/100,'-p','MarkerIndices',[index(1) index(2) index(3) index(4)], ...
             %    'MarkerFaceColor','red','MarkerSize',15);
             
-            if amp >= 6.5
-                assignin('base','pA',oldPulse(round(10E-6/T):round(35E-6/T)));
-                evalin('base','pAs = horzcat(pAs,pA);');
             %{
-            elseif amp >= 1.04736 && amp <= 1.08032
+            if false && amp >= 6.675 && amp <= 6.95
+                assignin('base','pulse',single(pulseIn.y(round(10E-6/T):round(35E-6/T))*50));
+                evalin('base','pulses = horzcat(pulses,netTrace);');
+            %}
+            if amp >= 1.0364 && amp <= 1.076
                 'AMP'
                 amp
                 %figure
                 %plot(pulseIn.y);
                 %title('low side');
-                assignin('base','p1',oldPulse(round(10E-6/T):round(35E-6/T)));
+                assignin('base','p1',pulseIn.y(round(10E-6/T):round(50E-6/T)));
                 evalin('base','p1s = horzcat(p1s,p1);');
-                %evalin('base','baseline1 = horzcat(baseline1,baseline);');
                 
-            elseif amp >= 3.65295 && amp <= 3.67676
+            elseif amp > 3.662 && amp <= 3.701
                 'AMP'
                 amp
-                assignin('base','p2',oldPulse(round(10E-6/T):round(35E-6/T)));
+                assignin('base','p2',pulseIn.y(round(10E-6/T):round(50E-6/T)));
                 evalin('base','p2s =  horzcat(p2s,p2);');
-                %evalin('base','baseline2 = horzcat(baseline1,baseline);');
                 
-            elseif amp >= 3.99902 && amp <= 4.03564
+            elseif amp >= 4.014 && amp <= 4.065
                 'AMP'
                 amp
                 %assignin('base','pulse',pulseIn.y);
                 %evalin('base','pulseHigh = pulseHigh + pulse;');
                 %evalin('base','m=m+1');
-                assignin('base','p3',oldPulse(round(10E-6/T):round(35E-6/T)));
+                assignin('base','p3',pulseIn.y(round(10E-6/T):round(50E-6/T)));
                 evalin('base','p3s =  horzcat(p3s,p3);');
-                %evalin('base','baseline2 = horzcat(baseline1,baseline);');
                 
-            elseif amp > 4.70398 && amp <= 4.74609
+            elseif amp > 4.717 && amp <= 4.766
                 'AMP'
                 amp
-                assignin('base','p4',oldPulse(round(10E-6/T):round(35E-6/T)));
+                assignin('base','p4',pulseIn.y(round(10E-6/T):round(50E-6/T)));
                 evalin('base','p4s =  horzcat(p4s,p4);');
-            
-            elseif amp > 5.07935 && amp <= 5.10681
+                
+            elseif amp > 5.098 && amp <= 5.129
                 'AMP'
                 amp
-                assignin('base','p5',oldPulse(round(10E-6/T):round(35E-6/T)));
+                assignin('base','p5',pulseIn.y(round(10E-6/T):round(50E-6/T)));
                 evalin('base','p5s =  horzcat(p5s,p5);');
-                %}
+                
             end
-            %}
-            %{
+        
+        %}
+        %{
                 
             elseif amp > 4.3716 && amp <= 4.40917
                 'AMP'
@@ -725,12 +749,12 @@ try
         
     end
     
-catch
-    shapedPulse = pulseIn.y;
-    noGood = 1;
-    'ERROR'
+%catch
+%    shapedPulse = pulseIn.y;
+%    noGood = 1;
+%    'ERROR'
     
-end
+%end
 
 end
 %}

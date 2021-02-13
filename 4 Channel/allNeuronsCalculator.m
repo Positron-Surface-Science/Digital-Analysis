@@ -1,4 +1,4 @@
-xToF = linspace(-1E-9,1.5E-9,256)';
+xToF = linspace(0,1.5E-9,256)';
 
 
     observe = [];
@@ -9,17 +9,17 @@ xToF = linspace(-1E-9,1.5E-9,256)';
     x0 = [];
     
 
-for n=1:64
+for n=1:16
     
     %if exact(n) == 1
         
-        for i=1:15
+        for i=1:1
             
             if allNeurons.eletParameters(1,i) ~= 0
                 
                 allNeurons.neurons{n}(allNeurons.neurons{n}(:,i) == 0,i) = NaN;
                 
-                hToF = histcounts(allNeurons.neurons{n}(:,i),'NumBins',256,'BinLimits',[-1E-9 1.5E-9])';
+                hToF = histcounts(allNeurons.neurons{n}(:,i),'NumBins',256,'BinLimits',[0 1.5E-9])';
                 hToF = hToF/max(hToF);
                 plot(hToF)
                 observe(i,n) = numel(allNeurons.neurons{n}(~isnan(allNeurons.neurons{n}(:,i)),i));
@@ -90,7 +90,7 @@ for n=1:64
                 'a == 0 error'
                 
             end
-            
+           
         catch
             best2(:,n) = [0 0 0 0];
             'try error 2'

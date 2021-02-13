@@ -314,10 +314,12 @@ for n=iIn:iIn+9
                     pulse{c}(s).y = pulse{c}(s).y - baseline;
                     
                 else
-                    if isempty(k)
+                    try
                         baseline = mean(pulse{c}(s).y(round((offset-999E-9)/T):round((offset-500E-9)/T)));
                         pulse{c}(s).y = pulse{c}(s).y - baseline;
                         'BASELINE CORRECTION PERFORMED'
+                        
+                    catch
                         
                     end
                     
@@ -327,18 +329,30 @@ for n=iIn:iIn+9
                 'bpf error';
             end
             
-            if c == 1 && false
-                plot(pulse{c}(s).y(45:500))
-                assignin('base','trace',pulse{c}(s).y(45:500));
-                evalin('base','traces = horzcat(traces,trace);');
+            pulse1 = single(pulse{c}(s).y(7301:8200));
+            
+            %if max(pulse1) <= 0.0595
+                %assignin('base','pulse1',pulse1);
+                %evalin('base','pulsesBack=horzcat(pulsesBack,pulse1);');
+                
+            %end
+            
+            if c == 2 && false
+                %plot(pulse{c}(s).y(45:500))
+                %assignin('base','trace',pulse{c}(s).y(45:500));
+                %evalin('base','traces = horzcat(traces,trace);');
                 %assignin('base','p',pulse{c}(s).y(18626:19063)/max(pulse{c}(s).y(18626:19063)));
                 %assignin('base','xTrace',pulse{c}(s).x(18626:19063));
+                netTrace = pulse{c}(s).y(round(10*10.^(-6)/T):round(35*10.^(-6)/T));
+                assignin('base','netTrace',netTrace);
+                %evalin('base','netTraces = horzcat(netTraces,netTrace);');
             end
-            
+            %{
             if c == 2
                 netTrace2 = pulse{2}(s).y(45:500);
                 
             end
+            %}
             %{
             if TypeIn(1) == 4 && TypeIn(c) == 3
                 assignin('base','trace',pulse{c}(s).y(round((offset-999E-9)/T):round((offset+500E-9)/T)));
@@ -406,6 +420,7 @@ for n=iIn:iIn+9
                     %trace2 = pulse{c}(s).y(1:5000);
                     %assignin('base','trace2',trace2);
                     netTrace = pulse{c}(s).y(45:500);
+                    %assignin('base','netTrace',netTrace);
                     %netTrace = netTrace(10:55);
                     %plot(netTrace)
                     %netTrace = pulse{c}(s).y(18626:19063); %pulse{c}(s).y(2500:4000);
@@ -413,6 +428,18 @@ for n=iIn:iIn+9
                     %assignin(
                     %oldPulse(18626:19063);%
                     %netTrace = netTrace/max(netTrace);
+                    %'HEREHERHERHEHER'
+                    %shapingTypeIn(c)
+                    if shapingTypeIn(c) == 0
+                        'HPGe SHAPING'
+                        netTrace = pulse{c}(s).y(round(10*10.^(-6)/T):round(35*10.^(-6)/T));
+                    
+                        netTrace = netTrace(501:1000);
+                        
+                        assignin('base','netTrace',netTrace);
+                        %evalin('base','pulses = horzcat(pulses,netTrace)');
+                        
+                    end
                     
                 catch
                     netTrace = [];
@@ -457,6 +484,11 @@ for n=iIn:iIn+9
                 %elet2
                 'Active Neuron'
                 activeNeuron = find(out == 1)
+                
+                
+                %nnz
+                
+                
                 %pause(1)
                 %assignin('base','netTrace',netTrace);
                 %evalin('base','plot([netTrace,tracesSingle(:,1)]);');
@@ -570,10 +602,10 @@ for n=iIn:iIn+9
                 
                 %'ELET PARAMETERS'
                 %ELETParam = best(1:2,activeNeuron);
-                ParameterMatrix = evalin('base','best2;');
+                %ParameterMatrix = evalin('base','best2;');
                 %ELETParam
                 'ELET PARAM';
-                ELETMatrix = ELETParam; %ParameterMatrix(1:2,activeNeuron);
+                ELETMatrix = ParameterMatrix(1:2,activeNeuron);
                 ELETMatrix
                 %best(1:2,activeNeuron);
                 
@@ -826,13 +858,27 @@ for n=iIn:iIn+9
                         'ToF CALCULATION';
                         timeOfFlight{s}(p) = (crossTime{s}.mcp(p) - crossTime{s}.gamma(1));
                         
+                        if numPeaks == 3
+                            %'NO GOOD'
+                            %noGood(:,s)
+                            %noGoodS(:,s)
+                            timeOfFlight{s}(p)
+                            %'mcp 1'
+                            %crossTime{s}.mcp(p)
+                            %'gamma 1'
+                            %crossTime{s}.gamma(1)
+                            
+                            %pause(2)
+                            
+                        end
+                        
                         'mcp 1';
                         crossTime{s}.mcp(p);
                         'gamma 1';
                         crossTime{s}.gamma(1);
                         
                         if (sum(ANN) == 1 && isempty(activeNeuron) == 0 && activeNeuron ~= 0)
-                            'SUBTRACTING MULTI';
+                            'SUBTRACTING MULTI'
                             timeOfFlight{s}(p) = timeOfFlight{s}(p) - ParameterMatrix(3,activeNeuron);
                             
                         elseif sum(ANN) ~= 0 && (isempty(activeNeuron) || activeNeuron == 0)
@@ -885,8 +931,8 @@ for n=iIn:iIn+9
                     if (sum(ANN) == 1 && ~isempty(activeNeuron) && activeNeuron ~= 0)% && ...
                             %VoutMax{2}(s) >= 5.94 && VoutMax{2}(s) <= 7.23%6.713%best(4,activeNeuron) <= 10E-9 && VoutMax{2}(s) >= 6.2 && VoutMax{2}(s) <= 7.0 6.2
                             
-                        'SUBTRACTING';
-                        timeOfFlight(s) = timeOfFlight(s);% - ParameterMatrix(3,activeNeuron) %ELETMatrix(activeNeuron,3);
+                        'SUBTRACTING'
+                        timeOfFlight(s) = timeOfFlight(s) - ParameterMatrix(3,activeNeuron) %ELETMatrix(activeNeuron,3);
                         %{
                         assignin('base','netTrace',netTrace);
                         assignin('base','netTrace2',netTrace2);
@@ -907,6 +953,9 @@ for n=iIn:iIn+9
                         %}
                         if true
                             %try
+                            'Assigning ToF to activeNeuron'
+                            activeNeuron
+                            timeOfFlight(s)
                                 assignin('base','activeNeuron',activeNeuron);
                                 assignin('base','timeOfFlight',timeOfFlight(s));
                                 evalin('base','index = find(allNeurons.neurons{activeNeuron}(:,numberRuns) == 0);');

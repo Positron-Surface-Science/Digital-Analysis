@@ -2,7 +2,12 @@ function [hToF,hGe,geMaxVsToF,gVsg,eVse] = histo(numberOfSamples,multiStop,numBi
     gammaWindow,gammaLower,timingWindowLower,timingWindowUpper,geOutMax,timeOfFlight,energyCoinCha, ...
     inputChannel,GGCoinCha,GGCoinOn,eeCoinOn,multiStopConditionsIn,secondECutoff)
 
-%eVse = [];
+eVse = [];
+hToF = [];
+hGe = [];
+gVsg = [];
+geMaxVsToF = [];
+gVsg = [];
 
 if GGCoinOn == false && eeCoinOn == false
     
@@ -160,7 +165,7 @@ elseif GGCoinOn == true && eeCoinOn == false
     gVsg = zeros(numBins(GGCoinCha(1)),numBins(GGCoinCha(2)));
     
     for g=1:2
-        bins(g,:) = linspace(gammaLower(GGCoinCha(g)),gammaWindow(GGCoinCha(g)),numBins(GGCoinCha(g)))';
+        %bins(g,:) = linspace(gammaLower(GGCoinCha(g)),gammaWindow(GGCoinCha(g)),numBins(GGCoinCha(g)));
         binsSize(g) = ((gammaWindow(GGCoinCha(g)) - gammaLower(GGCoinCha(g)))/numBins(GGCoinCha(g)));
         
     end
@@ -266,10 +271,6 @@ elseif GGCoinOn == false && eeCoinOn == true
         geMaxVsToF = [];
         
     end
-    
-    hToF = [];
-    hGe = [];
-    gVsg = [];
     
 end
 

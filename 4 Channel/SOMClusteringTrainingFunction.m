@@ -6,12 +6,14 @@
 %
 %   p5s - input data.
 
-x = tracesSingle;
+x = pulsesSingle;
 
 % Create a Self-Organizing Map
 dimension1 = 8;
 dimension2 = 8;
-net = selforgmap([dimension1 dimension2],150,4,'hextop','linkdist');
+net = selforgmap([dimension1 dimension2], 450, 3, 'gridtop', 'linkdist');
+
+net = configure(net, x);
 
 % Choose Plot Functions
 % For a list of all plot functions type: help nnplot

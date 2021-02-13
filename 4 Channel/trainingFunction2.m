@@ -7,8 +7,8 @@
 %   inputVectors2 - input data.
 %   targetValues - target data.
 
-x = input(200:1000,:);
-t = output(200:1000,:);
+x = cData;%input(200:1000,:);
+t = cResponse;%output(200:1000,:);
 
 % Choose a Training Function
 % For a list of all training functions type: help nntrain

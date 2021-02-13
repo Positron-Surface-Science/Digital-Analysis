@@ -1,9 +1,9 @@
-numFeatures = 1951;
+numFeatures = 1500;
 numHiddenUnits1 = 1000;
 numHiddenUnits2 = 100;
-numResponses1 = 500;
-numResponses2 = 250;
-numResponses3 = 1951;
+numResponses1 = 25;
+numResponses2 = 5;
+numResponses3 = 1;
 
 layers = [ ...
     %imageInputLayer([438 1 1], 'Name', 'im')
@@ -13,38 +13,44 @@ layers = [ ...
     
     
     
-    convolution2dLayer([5 1], 64, 'Name', 'conv', 'NumChannels', 1, 'Stride', 5)
-    batchNormalizationLayer('Name', 'bn')
-    tanhLayer('Name', 'relu')
+    %convolution2dLayer([5 1], 64, 'Name', 'conv', 'NumChannels', 1, 'Stride', 5)
+    %batchNormalizationLayer('Name', 'bn')
+    %leakyReluLayer('Name', 'relu')
 
     
 
-    convolutionalUnit(128, 2, 64,'convolUnit')
+    %convolutionalUnit(128, 2, 64,'convolUnit')
     
-    additionLayer(2, 'Name', 'add1')
-    tanhLayer('Name', 'lrelu2')
+    %additionLayer(2, 'Name', 'add1')
+    %leakyReluLayer('Name', 'lrelu2')
     
-    convolutionalUnit(256, 2, 128,'convolUnit2')
+    %convolutionalUnit(256, 2, 128,'convolUnit2')
 
-    additionLayer(2, 'Name', 'add2')
-    tanhLayer('Name', 'lrelu3')
+    %additionLayer(2, 'Name', 'add2')
+    %leakyReluLayer('Name', 'lrelu3')
 
 
-    averagePooling2dLayer([3 1], 'Name', 'mpling', 'Stride', 1)
-    
-%{
+    %averagePooling2dLayer([3 1], 'Name', 'mpling', 'Stride', 1)
+    fullyConnectedLayer(numResponses1, 'Name', 'fc1')
+    %dropoutLayer(0.1, 'Name', 'dpo1')
+    leakyReluLayer(0.25, 'Name', 'lrelu1')
+
+    %averagePooling2dLayer(3, 'Name', 'averagepool1')
+
     fullyConnectedLayer(numHiddenUnits2, 'Name', 'fc2')
-    dropoutLayer(0.5, 'Name', 'dpo1')
-    tanhLayer('Name', 'lrelu4')
-  %}  
+    dropoutLayer(0.1, 'Name', 'dpo2')
+    leakyReluLayer(0.25, 'Name', 'lrelu4')
+  
     sequenceUnfoldingLayer('Name', 'unfold')
     
     flattenLayer('Name', 'flatten')
 
-    lstmLayer(numHiddenUnits1, 'Name', 'lstm1')
+    %lstmLayer(numHiddenUnits1, 'Name', 'lstm1')
+    
+    
 
     fullyConnectedLayer(numResponses3, 'Name', 'fc3')
-    dropoutLayer(0.5, 'Name', 'dpo2')
+    %dropoutLayer(0.5, 'Name', 'dpo2')
     %tanhLayer('Name', 'relu3')
     regressionLayer('Name', 'rl')];
 
@@ -53,22 +59,22 @@ layers = [ ...
 maxEpochs = 100;
 miniBatchSize = 256;
 
-sLayer1 = skipLayer(128,4,64,'1');
-sLayer2 = skipLayer(256,4,128,'2');
+%sLayer1 = skipLayer(128,4,64,'1');
+%sLayer2 = skipLayer(256,4,128,'2');
 
 lgraph = layerGraph(layers);
-lgraph = addLayers(lgraph,sLayer1);
-lgraph = addLayers(lgraph,sLayer2);
-lgraph = connectLayers(lgraph,'relu','resizingConv1');
-lgraph = connectLayers(lgraph,'lrelu2','resizingConv2');
+%lgraph = addLayers(lgraph,sLayer1);
+%lgraph = addLayers(lgraph,sLayer2);
+%lgraph = connectLayers(lgraph,'relu','resizingConv1');
+%lgraph = connectLayers(lgraph,'lrelu2','resizingConv2');
 lgraph = connectLayers(lgraph,'fold/miniBatchSize','unfold/miniBatchSize');
-lgraph = connectLayers(lgraph,'skippingBn1','add1/in2');
-lgraph = connectLayers(lgraph,'skippingBn2','add2/in2');
+%lgraph = connectLayers(lgraph,'skippingBn1','add1/in2');
+%lgraph = connectLayers(lgraph,'skippingBn2','add2/in2');
 
 options = trainingOptions('adam', ...
     'MaxEpochs',maxEpochs, ...
     'MiniBatchSize',miniBatchSize, ...
-    'InitialLearnRate',0.01, ...
+    'InitialLearnRate',0.001, ...
     'LearnRateSchedule','piecewise', ...
     'LearnRateDropFactor',0.5, ...
     'LearnRateDropPeriod',5, ...
@@ -81,7 +87,7 @@ options = trainingOptions('adam', ...
 
 %'L2Regularization',0.1, ...
 
-net4 = trainNetwork(cData1, cResponse1, lgraph, options);
+net4 = trainNetwork(cData, cResponse, lgraph, options);
 
 function layers = convolutionalUnit(numF,stride,numC,tag)
 layers = [ ...

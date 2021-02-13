@@ -1,4 +1,4 @@
-function [trapezoidalPlateauAverage,vOut,noGood] = trapezoidalFilter(vIn,oldPulse,shapingTypeIn,TFRFIn,TFTopIn,tTiming)
+function [trapezoidalPlateauAverage,vOut,noGood] = trapezoidalFilter(vIn,oldPulse,shapingTypeIn,TFRFIn,TFTopIn,tTiming,ANN)
 format long
 digits(15)
 
@@ -508,7 +508,11 @@ vOut = conv(vIn.y(50:numel(vIn.y)-50),squarePulse);
         %if sum(out(1:30)) == 1 %out(8) == 1 || out(13) == 1 || out(17) == 1 || out(22) == 1
         %plot(vIn.y)
         %}
+        
+        
         [trapezoidalPlateauAverage,vOut,noGood] = MWD(vIn,oldPulse,TFRFIn,TFTopIn);
+        
+        
         
         %{
         else
@@ -805,13 +809,13 @@ vOut = conv(vIn.y(50:numel(vIn.y)-50),squarePulse);
         %plot(vOut);
         %}
         plot(vIn.y)
-        vOut = vIn.y;%abs(smooth(diff(vIn.y),L,'moving'));
+        vOut = abs(vIn.y);%abs(smooth(diff(vIn.y),L,'moving'));
         
         for l=1:10
             vOut = smooth(vOut(100:numel(vOut)-100),L,'moving');
         end
         
-        vOut = vOut(100:numel(vOut)-3000)*1000*(L);
+        vOut = vOut(100:numel(vOut)-3000)*(L);
         [trapezoidalPlateauAverage,index] = max(vOut);
         trapezoidalPlateauAverage
         
@@ -1481,48 +1485,108 @@ vOut = conv(vIn.y(50:numel(vIn.y)-50),squarePulse);
         %p = vIn.y(round(16.25E-6/Ts+3):round(35E-6/Ts)) + 70;
         
         %plot(p)
-        p = vIn.y(round(10E-6/Ts):round(35E-6/Ts));
-        size(p)
-        %p = p(400:2000);
+        p = vIn.y(round(10E-6/Ts):round(50E-6/Ts)); %round(35E-6/Ts));
+        assignin('base','vIn',vIn.y);
+        
+        
+        size(p);
+        p = p(451:1450);
         net = evalin('base','net4');
         
-        %pM = evalin('base','ps1Mean');
-        %pS = evalin('base','ps1Std');
-        %out = (predict(net, , 'ExecutionEnvironment', 'gpu'));
+        pM = evalin('base','ps1Mean');
+        pS = evalin('base','ps1Std');
+        p = (p - pM)/pS;
+        out = (predict(net, p, 'ExecutionEnvironment', 'cpu'));
+        %out = activations(net,p,'conv4');
+        out = out*pS;% + pM;
+        p = p*pS + pM;
+        out2 = out;%(:,1,1)*100; %(out*pS + pM)*100
         
-        %plot([(p - pM)/pS])
         %baseline = 0;%mean(out(1:50));
         %out = out - baseline;
         %}
+        %{
+        net = evalin('base','net4');
+        
         fs = 2.5E9;
-        range1 = 200;
-        range2 = 2500;
-        specRange1 = 10;
-        specRange2 = 90;
+        
+range1 = 451;
+range2 = 950;
+
+specRange1 = 1;
+specRange2 = 75;
+
+t1 = 15;
+t2 = 10;
+t3 = 200;
         
         p = p(range1:range2);
         net = evalin('base','net4');
-        spec = spectrogram(p, 5, 2, 250, fs, 'yaxis');
+        spec = spectrogram(p, t1,t2, t3, fs, 'yaxis');
         rispec = horzcat(single(real(spec(specRange1:specRange2,:))), single(imag(spec(specRange1:specRange2,:))));
         
+        
         out = predict(net, rispec*1E4, 'ExecutionEnvironment', 'cpu');
+        out = out/10000;
+        %plot([p out])
         
-        %out = out - mean(out(1:200));
         
-        plot([p*1E4, out])
-        trapezoidalPlateauAverage = (max(smooth(out/(1E2),25,'moving')))  
+        %}
+        %out = out;% - mean(out(200:300));
+        
+        plot([p out])
+        
+        %out = out*100;
+        
+
+        %plot([out2])
+
+        %out = (out*pS + pM)*100;
+        
+        
+        %size(p)
+        %size(out)
+        %plot([p out])
+        %out2 = p - out;
+        out2 = out*100;
+        %plot(out2)
+        %{
+        for i=1:4
+            out2 = smooth(out2(10:end-10), 50, 'moving');
+            
+        end
+        %}
+        %[trapezoidalPlateauAverage,vOut,noGood] = MWD(vIn,out,TFRFIn,TFTopIn);
+        %trapezoidalPlateauAverage
+        %trapezoidalPlateauAverage = 0.001831*(2587/356)*out
+        out2 = smooth(out2,55,'moving');
+        trapezoidalPlateauAverage = max(out2)
         %trapezoidalPlateauAverage = (max(aF(1:numel(aF)-10))*100 + max(aF2(1:numel(aF2)-10))*100 + ...
         %    max(aF3(1:numel(aF3)-10))*100)/3;% - mean(vIn.y(round(10E-6/Ts):round(10E-6/Ts)+400))*100;% - mean(a(100:400))*100;
-        vOut = out;
+        %{
+        pulseDeconv = out2;
+        tau = 7000;
+        
+        for n=173:numel(out2)
+            
+            pulseDeconv(n) = pulseDeconv(n-1) + out2(n) - out2(n-1) + out2(n-1)/tau;
+            
+        end
+        
+        trapezoidalPlateauAverage = mean(pulseDeconv(173:end-550))
+        
+        %}
+        vOut = out2;
         noGood = 0;
         
-        if trapezoidalPlateauAverage <= 0 && false
+        if trapezoidalPlateauAverage <= 0.28
             trapezoidalPlateauAverage = 0;
             vOut = [];
             noGood = 1;
             %err
             
         end
+        
         %plot([aF vIn.y(round(10E-6/Ts)+299:round(24E-6/Ts)-559)]);
         %if false && trapezoidalPlateauAverage <= 1.4
         %plot([aL aF v]);
@@ -1535,40 +1599,40 @@ vOut = conv(vIn.y(50:numel(vIn.y)-50),squarePulse);
         %end
         
         if false
-        if amp >= 0.9297 && amp <= 0.9519
+        if amp >= 1.0364 && amp <= 1.076
                 'AMP'
                 amp
                 %figure
                 %plot(pulseIn.y);
                 %title('low side');
-                assignin('base','p1',vIn.y(round(10E-6/Ts):round(24E-6/Ts)));
+                assignin('base','p1',vIn.y(round(10E-6/Ts):round(50E-6/Ts)));
                 evalin('base','p1s = horzcat(p1s,p1);');
                 
-            elseif amp > 3.185 && amp <= 3.2078
+            elseif amp > 3.662 && amp <= 3.701
                 'AMP'
                 amp
-                assignin('base','p2',vIn.y(round(10E-6/Ts):round(24E-6/Ts)));
+                assignin('base','p2',vIn.y(round(10E-6/Ts):round(50E-6/Ts)));
                 evalin('base','p2s =  horzcat(p2s,p2);');
                 
-            elseif amp >= 3.5137 && amp <= 3.5461
+            elseif amp >= 4.014 && amp <= 4.065
                 'AMP'
                 amp
                 %assignin('base','pulse',pulseIn.y);
                 %evalin('base','pulseHigh = pulseHigh + pulse;');
                 %evalin('base','m=m+1');
-                assignin('base','p3',vIn.y(round(10E-6/Ts):round(24E-6/Ts)));
+                assignin('base','p3',vIn.y(round(10E-6/Ts):round(50E-6/Ts)));
                 evalin('base','p3s =  horzcat(p3s,p3);');
                 
-            elseif amp > 4.1306 && amp <= 4.1648
+            elseif amp > 4.717 && amp <= 4.766
                 'AMP'
                 amp
-                assignin('base','p4',vIn.y(round(10E-6/Ts):round(24E-6/Ts)));
+                assignin('base','p4',vIn.y(round(10E-6/Ts):round(50E-6/Ts)));
                 evalin('base','p4s =  horzcat(p4s,p4);');
                 
-            elseif amp > 4.428 && amp <= 4.4536
+            elseif amp > 5.098 && amp <= 5.129
                 'AMP'
                 amp
-                assignin('base','p5',vIn.y(round(10E-6/Ts):round(24E-6/Ts)));
+                assignin('base','p5',vIn.y(round(10E-6/Ts):round(50E-6/Ts)));
                 evalin('base','p5s =  horzcat(p5s,p5);');
                 
             end
