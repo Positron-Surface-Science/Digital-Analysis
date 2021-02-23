@@ -7,11 +7,15 @@ vectorsC = cell(117,1);
 vectorsCi = cell(95,1);
 vectorsCt = cell(14,1);
 
-while i <= 38
+numberInSet = 5000;
+
+valSet = floor(0.1*195000/numberInSet);
+
+while i <= floor(195000/numberInSet) - 1
     
-    ans1 = net(pulsesFront(:,i*5000+1:i*5000+5000));
-    ans2 = net(pulsesRight(:,i*5000+1:i*5000+5000));
-    ans3 = net(pulsesBack(:,i*5000+1:i*5000+5000));
+    ans1 = net(pulsesFront(:,i*numberInSet+1:i*numberInSet+numberInSet));
+    ans2 = net(pulsesRight(:,i*numberInSet+1:i*numberInSet+numberInSet));
+    ans3 = net(pulsesBack(:,i*numberInSet+1:i*numberInSet+numberInSet));
     
     totalVector1 = sum(ans1,2);
     totalVector2 = sum(ans2,2);
@@ -57,5 +61,25 @@ for i=96:117
     
 end
 
-responsesCiC = categorical(responsesCi);
-responsesCtC = categorical(responsesCtC);
+%responsesCiC = categorical(responsesCi);
+%responsesCtC = categorical(responsesCtC);
+
+for i=1:95
+vectorsCi{i}(:,1) = vectorsC{i}(:,1);
+%responsesCt{i-95}(:) = responsesC{i}(:);
+end
+
+vectorsCi=vectorsCi';
+
+for i=96:117
+vectorsCt{i-95}(:,1) = vectorsC{i}(:,1);
+%responsesCt{i-95}(:) = responsesC{i}(:);
+end
+vectorsCt=vectorsCt';
+
+ans = categorical(responsesC);
+
+responsesCi = ans(1:95);
+responsesCt = ans(96:117);
+responsesCi = responsesCi';
+responsesCt = responsesCt';

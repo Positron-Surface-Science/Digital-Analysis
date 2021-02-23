@@ -24,7 +24,7 @@ layers = [ ...
     %fullyConnectedLayer(numHiddenUnits, 'Name', 'fc1')
     
     %leakyReluLayer('Name', 'lrelu1')
-    lstmLayer(numHiddenUnits+150, 'Name', 'lstm0', 'OutputMode','last')
+    bilstmLayer(numHiddenUnits+150, 'Name', 'lstm0', 'OutputMode','last')
     
     
     %sequenceUnfoldingLayer('Name', 'unfold')
